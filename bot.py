@@ -1,7 +1,19 @@
 # Don't Remove Credit @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
+import threading
+import requests
+import time
 
+def keep_alive():
+    while True:
+        try:
+            requests.get("https://individual-rook-monish2807-0a85cd82.koyeb.app/")
+        except:
+            pass
+        time.sleep(30)  # Ping every 5 minutes
+
+threading.Thread(target=keep_alive, daemon=True).start()
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
 
 import sys, glob, importlib, logging, logging.config, pytz, asyncio
