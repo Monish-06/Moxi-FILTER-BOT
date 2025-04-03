@@ -8,7 +8,7 @@ import time
 def keep_alive():
     while True:
         try:
-            requests.get("https://individual-rook-monish2807-0a85cd82.koyeb.app/")
+            requests.get("https://sleepy-starfish-monish2807-50b1cc37.koyeb.app/")
         except:
             pass
         time.sleep(300)  # Ping every 5 minutes
