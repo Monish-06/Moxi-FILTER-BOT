@@ -11,7 +11,7 @@ def keep_alive():
             requests.get("https://individual-rook-monish2807-0a85cd82.koyeb.app/")
         except:
             pass
-        time.sleep(30)  # Ping every 5 minutes
+        time.sleep(60)  # Ping every 5 minutes
 
 threading.Thread(target=keep_alive, daemon=True).start()
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
