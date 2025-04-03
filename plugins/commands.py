@@ -20,6 +20,51 @@ logger = logging.getLogger(__name__)
 BATCH_FILES = {}
 join_db = JoinReqs
 
+import json
+from pyrogram import Client, filters
+from pymongo import MongoClient
+
+# MongoDB connection
+client = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+db = client["monish280720"]
+collection = db["filters"]
+
+@Client.on_message(filters.command("import") & filters.private)
+async def import_filters(bot, message):
+    if not message.reply_to_message or not message.reply_to_message.document:
+        return await message.reply("Please reply to the Rose Bot's exported JSON file.")
+
+    doc = message.reply_to_message.document
+    if not doc.file_name.endswith(".json"):
+        return await message.reply("Only JSON files are supported.")
+
+    # Download the JSON file
+    file_path = await bot.download_media(doc)
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            rose_data = json.load(file)
+
+        imported_count = 0
+        for keyword, response in rose_data.items():
+            filter_entry = {
+                "keyword": keyword,
+                "reply": response,  # Modify this if the format differs
+                "buttons": [],  # Add button parsing if necessary
+            }
+            collection.insert_one(filter_entry)
+            imported_count += 1
+
+        await message.reply(f"✅ Successfully imported {imported_count} filters from Rose Bot!")
+    
+    except Exception as e:
+        await message.reply(f"❌ Error importing filters: {e}")
+
+
+
+
+
+
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
     try:
