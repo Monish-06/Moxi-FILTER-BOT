@@ -124,10 +124,18 @@ async def addfilter(client, message):
 async def get_all(client, message):
     
     chat_type = message.chat.type
-    userid = message.from_user.id if message.from_user else None
-    if not userid:
-        return await message.reply(f"You are anonymous admin. Use /connect {message.chat.id} in PM")
-    if chat_type == enums.ChatType.PRIVATE:
+   userid = message.from_user.id if message.from_user else 0  # Use 0 as dummy ID for anon
+
+# Skip connection logic if it's anonymous
+if message.from_user is None:
+    grp_id = message.chat.id
+    title = message.chat.title
+else:
+    # your normal PRIVATE and GROUP connection logic here
+  #  userid = message.from_user.id if message.from_user else None
+   # if not userid:
+   #     return await message.reply(f"You are anonymous admin. Use /connect {message.chat.id} in PM")
+       if chat_type == enums.ChatType.PRIVATE:
         userid = message.from_user.id
         grpid = await active_connection(str(userid))
         if grpid is not None:
