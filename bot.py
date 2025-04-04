@@ -14,6 +14,32 @@ def keep_alive():
         time.sleep(100)  # Ping every 5 minutes
  
 threading.Thread(target=keep_alive, daemon=True).start()
+
+
+from pyrogram import Client, filters
+from database.gfilters_mdb import find_gfilter
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+@Client.on_message(filters.text & filters.group & ~filters.edited)
+async def gfilter_trigger(client, message):
+    keyword = message.text.lower().strip()
+    reply_text, btn, alert, fileid = await find_gfilter('gfilters', keyword)
+
+    if reply_text:
+        if btn and btn != "[]":
+            keyboard = eval(btn)
+            reply_markup = InlineKeyboardMarkup(keyboard)
+        else:
+            reply_markup = None
+
+        if fileid and fileid != "None":
+            try:
+                await message.reply_cached_media(fileid, caption=reply_text, reply_markup=reply_markup)
+            except:
+                await message.reply_text(reply_text, reply_markup=reply_markup)
+        else:
+            await message.reply_text(reply_text, reply_markup=reply_markup)
+
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
 
 import sys, glob, importlib, logging, logging.config, pytz, asyncio
