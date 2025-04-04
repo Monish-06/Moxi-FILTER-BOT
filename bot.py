@@ -5,15 +5,15 @@ import threading
 import requests
 import time
  
- def keep_alive():
-     while True:
-         try:
-             requests.get("https://sleepy-starfish-monish2807-50b1cc37.koyeb.app/")
-         except:
-             pass
-         time.sleep(120)  # Ping every 5 minutes
+def keep_alive():
+    while True:
+        try:
+            requests.get("https://sleepy-starfish-monish2807-50b1cc37.koyeb.app/")
+        except:
+            pass
+        time.sleep(120)  # Ping every 5 minutes
  
- threading.Thread(target=keep_alive, daemon=True).start()
+threading.Thread(target=keep_alive, daemon=True).start()
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
 
 import sys, glob, importlib, logging, logging.config, pytz, asyncio
