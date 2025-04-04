@@ -1,19 +1,19 @@
 # Don't Remove Credit @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
-import threading
+import asyncio
 import requests
-import time
 
-def keep_alive():
-    while True:
+async def keep_alive():
+    while True:  # Infinite loop
         try:
-            requests.get("https://sleepy-starfish-monish2807-50b1cc37.koyeb.app/")
-        except:
-            pass
-        time.sleep(120)  # Ping every 5 minutes
+            requests.get("https://your-app.koyeb.app/")
+        except Exception as e:
+            print(f"Ping failed: {e}")  # Logs errors
+        await asyncio.sleep(120)  # Waits 2 minutes before next ping
 
-threading.Thread(target=keep_alive, daemon=True).start()
+# Start the loop
+asyncio.run(keep_alive())
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
 
 import sys, glob, importlib, logging, logging.config, pytz, asyncio
