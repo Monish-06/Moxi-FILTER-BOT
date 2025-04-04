@@ -9,7 +9,32 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from database.gfilters_mdb import add_gfilter, get_gfilters, delete_gfilter, count_gfilters
 from database.connections_mdb import active_connection
 from utils import get_file_id, gfilterparser, split_quotes
+from database.gfilters_mdb import find_gfilter
 
+@Client.on_message(filters.text & filters.group)
+async def gfilter_trigger(client, message):
+    text = message.text.lower()
+    data = await find_gfilter("gfilters", text)
+
+    if data:
+        reply_text = data['reply_text']
+        buttons = data['btn']
+        file_id = data['file_id']
+        alert = data['alert']
+
+        if file_id:
+            await message.reply_cached_media(
+                media=file_id,
+                caption=reply_text,
+                reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+                quote=True
+            )
+        else:
+            await message.reply_text(
+                text=reply_text,
+                reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+                quote=True
+            )
 @Client.on_message(filters.command(['gfilter', 'addg']) & filters.incoming & filters.user(ADMINS))
 async def addgfilter(client, message):
     args = message.text.html.split(None, 1)
