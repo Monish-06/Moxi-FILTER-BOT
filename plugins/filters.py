@@ -149,13 +149,13 @@ async def get_all(client, message):
     else:
         return
 
-    st = await client.get_chat_member(grp_id, userid)
-    if (
-        st.status != enums.ChatMemberStatus.ADMINISTRATOR
-        and st.status != enums.ChatMemberStatus.OWNER
-        and str(userid) not in ADMINS
-    ):
-        return
+   # st = await client.get_chat_member(grp_id, userid)
+   # if (
+       # st.status != enums.ChatMemberStatus.ADMINISTRATOR
+       # and st.status != enums.ChatMemberStatus.OWNER
+       # and str(userid) not in ADMINS
+  #  ):
+       # return
 
     texts = await get_filters(grp_id)
     count = await count_filters(grp_id)
