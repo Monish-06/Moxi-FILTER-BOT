@@ -7,7 +7,7 @@ import requests
 async def keep_alive():
     while True:  # Infinite loop
         try:
-            requests.get("https://your-app.koyeb.app/")
+            requests.get("https://sleepy-starfish-monish2807-50b1cc37.koyeb.app/")
         except Exception as e:
             print(f"Ping failed: {e}")  # Logs errors
         await asyncio.sleep(120)  # Waits 2 minutes before next ping
