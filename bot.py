@@ -3,16 +3,32 @@
 # Ask Doubt on telegram @KingVJ01
 import asyncio
 import requests
+from flask import Flask
+import threading
 
+# Create a Flask web server
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "I'm alive!"
+
+def run_server():
+    app.run(host="0.0.0.0", port=8080)
+
+# Start the web server in a separate thread
+threading.Thread(target=run_server, daemon=True).start()
+
+# Async function to keep the bot alive
 async def keep_alive():
-    while True:  # Infinite loop
+    while True:
         try:
             requests.get("https://sleepy-starfish-monish2807-50b1cc37.koyeb.app/")
         except Exception as e:
-            print(f"Ping failed: {e}")  # Logs errors
-        await asyncio.sleep(120)  # Waits 2 minutes before next ping
+            print(f"Ping failed: {e}")
+        await asyncio.sleep(120)  # Ping every 2 minutes
 
-# Start the loop
+# Run the keep-alive function
 asyncio.run(keep_alive())
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
 
