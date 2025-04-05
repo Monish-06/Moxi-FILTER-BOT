@@ -88,9 +88,41 @@ async def gen_link_batch(bot, message):
     sts = await message.reply("Generating link for your message.\nThis may take time depending on the number of messages.")
 
     if chat_id in FILE_STORE_CHANNEL:
-        string = f"{f_msg_id}_{l_msg_id}_{chat_id}_{cmd.lower().strip()}"
-        b_64 = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
-        return await sts.edit(f"Here is your link https://t.me/{temp.U_NAME}?start=DSTORE-{b_64}")
+    # Forward all files one-by-one to FILE_STORE_CHANNEL
+    outlist = []
+    og_msg = 0
+
+    async for msg in bot.iter_messages(f_chat_id, l_msg_id, f_msg_id):
+        if msg.empty or msg.service or not msg.media:
+            continue
+        try:
+            forwarded = await msg.forward(FILE_STORE_CHANNEL)
+            file_type = forwarded.media
+            file = getattr(forwarded, file_type.value)
+            caption = getattr(forwarded, 'caption', '')
+            if caption:
+                caption = caption.html
+            file = {
+                "file_id": file.file_id,
+                "caption": caption,
+                "title": getattr(file, "file_name", ""),
+                "size": file.file_size,
+                "protect": cmd.lower().strip() == "/pbatch",
+            }
+            og_msg += 1
+            outlist.append(file)
+        except Exception as e:
+            print(f"Error forwarding message: {e}")
+            continue
+
+    with open(f"batchmode_{message.from_user.id}.json", "w+") as out:
+        json.dump(outlist, out)
+
+    post = await bot.send_document(LOG_CHANNEL, f"batchmode_{message.from_user.id}.json", file_name="Batch.json", caption="⚠️ Generated for file store.")
+    os.remove(f"batchmode_{message.from_user.id}.json")
+
+    file_id, ref = unpack_new_file_id(post.document.file_id)
+    return await sts.edit(f"Here is your link\nContains `{og_msg}` files.\nhttps://t.me/{temp.U_NAME}?start=BATCH-{file_id}")
 
     FRMT = "Generating Link...\nTotal Messages: `{total}`\nDone: `{current}`\nRemaining: `{rem}`\nStatus: `{sts}`"
 
