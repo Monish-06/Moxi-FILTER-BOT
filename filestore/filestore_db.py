@@ -1,9 +1,9 @@
 from pymongo import MongoClient
-from info import MONGO_URI, DATABASE_NAME, FILE_STORE_CHANNEL
+from info import MONGO_URI, DATABASE_NAME2, FILE_STORE_CHANNEL
 
 client = MongoClient(MONGO_URI)
-db = client[DATABASE_NAME]
-collection = db["filestore"]
+db = client[DATABASE_NAME2]
+collection = db["files"]
 
 async def save_file(msg):
     file_id = msg.id
