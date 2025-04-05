@@ -45,6 +45,15 @@ async def gen_link_s(bot, message):
     string = 'filep_' if message.text.lower().strip() == "/plink" else 'file_'
     string += file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
+    await db_insert(
+    file_id=file_id,
+    chat_id=replied.chat.id,
+    message_id=replied.id,
+    file_name=getattr(getattr(replied, file_type.value), "file_name", "No Name"),
+    file_size=getattr(getattr(replied, file_type.value), "file_size", 0),
+    file_caption=replied.caption or "",
+    file_type=file_type.value.lower()
+)
     await message.reply(f"Here is your Link:\nhttps://t.me/{temp.U_NAME}?start={outstr}")    
     
 @Client.on_message(filters.command(['batch', 'pbatch']) & filters.create(allowed))
