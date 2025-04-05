@@ -21,16 +21,27 @@ async def allowed(_, __, message):
 
 @Client.on_message(filters.command(['link', 'plink']) & filters.create(allowed))
 async def gen_link_s(bot, message):
-    vj = await bot.ask(chat_id = message.from_user.id, text = "Now Send Me Your Message Which You Want To Store.")
-    file_type = vj.media
+    replied = message.reply_to_message
+    if not replied:
+        vj = await bot.ask(chat_id=message.from_user.id, text="Now send me your message which you want to store.")
+        replied = vj
+
+    if not replied:
+        return await message.reply("I didn’t receive any file/message to process.")
+
+    file_type = replied.media
     if file_type not in [enums.MessageMediaType.VIDEO, enums.MessageMediaType.AUDIO, enums.MessageMediaType.DOCUMENT]:
-        return await vj.reply("Send me only video,audio,file or document.")
+        return await message.reply("Send me only video, audio, or document.")
+
     if message.has_protected_content and message.chat.id not in ADMINS:
         return await message.reply("okDa")
+
     result = unpack_new_file_id(getattr(replied, file_type.value).file_id)
     file_id = result[0]
     ref = result[1] if len(result) > 1 else None
-     #file_id, ref = unpack_new_file_id(getattr(replied, file_type.value).file_id)
+    if not ref:
+        return await message.reply_text("This file cannot be linked right now. Try forwarding it to me again.")
+
     string = 'filep_' if message.text.lower().strip() == "/plink" else 'file_'
     string += file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
