@@ -32,6 +32,8 @@ async def gen_link_s(bot, message):
     result = unpack_new_file_id(getattr(replied, file_type.value).file_id)
     file_id = result[0]
     ref = result[1] if len(result) > 1 else None
+    if not ref:
+    return await message.reply_text("This file cannot be linked right now. Try forwarding it to me again.")
     #file_id, ref = unpack_new_file_id(getattr(replied, file_type.value).file_id)
     string = 'filep_' if message.text.lower().strip() == "/plink" else 'file_'
     string += file_id
