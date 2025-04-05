@@ -27,22 +27,29 @@ async def gen_link_s(bot, message):
         return await message.reply("Send me only video, audio, or document.")
 
     if message.has_protected_content and message.chat.id not in ADMINS:
-        return await message.reply("okDa")
+        return await message.reply("Protected content cannot be linked.")
 
     # Forward the file to the file store channel
-    forwarded = await replied.forward(FILE_STORE_CHANNEL)
+    try:
+        forwarded = await replied.forward(FILE_STORE_CHANNEL)
+    except Exception as e:
+        return await message.reply(f"Failed to forward file to store channel.\nError: `{e}`")
 
-    # Unpack using the forwarded message file_id
-    result = unpack_new_file_id(getattr(forwarded, file_type.value).file_id)
-    file_id = result[0]
-    ref = result[1] if len(result) > 1 else None
+    # Extract file ID from forwarded message
+    try:
+        result = unpack_new_file_id(getattr(forwarded, file_type.value).file_id)
+        file_id = result[0]
+        ref = result[1] if len(result) > 1 else None
+        if not ref:
+            return await message.reply_text("This file cannot be linked right now. Try again.")
+    except Exception as e:
+        return await message.reply(f"Error while processing file ID.\n`{e}`")
 
-    if not ref:
-        return await message.reply_text("This file cannot be linked right now. Try forwarding it to me again.")
-
+    # Generate base64 encoded link
     string = 'filep_' if message.text.lower().strip() == "/plink" else 'file_'
     string += file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
+    
     await message.reply(f"Here is your Link:\nhttps://t.me/{temp.U_NAME}?start={outstr}")
 
 @Client.on_message(filters.command(['batch', 'pbatch']) & filters.create(allowed))
@@ -89,8 +96,8 @@ async def gen_link_batch(bot, message):
 
     if chat_id in FILE_STORE_CHANNEL:
     # Forward all files one-by-one to FILE_STORE_CHANNEL
-    outlist = []
-    og_msg = 0
+        outlist = []
+        og_msg = 0
 
     async for msg in bot.iter_messages(f_chat_id, l_msg_id, f_msg_id):
         if msg.empty or msg.service or not msg.media:
