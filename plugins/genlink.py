@@ -8,6 +8,7 @@ from pyrogram import filters, Client, enums
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
 from info import ADMINS, LOG_CHANNEL, FILE_STORE_CHANNEL, PUBLIC_FILE_STORE
 from database.ia_filterdb import unpack_new_file_id
+from database.ia_filterdb import insert_linked_file
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,7 +42,15 @@ async def gen_link_s(bot, message):
     ref = result[1] if len(result) > 1 else None
     if not ref:
         return await message.reply_text("This file cannot be linked right now. Try forwarding it to me again.")
-
+    await insert_linked_file(
+    file_id=file_id,
+    chat_id=replied.chat.id,
+    message_id=replied.id,
+    file_name=getattr(getattr(replied, file_type.value), "file_name", "No Name"),
+    file_size=getattr(getattr(replied, file_type.value), "file_size", 0),
+    file_caption=replied.caption or "",
+    file_type=file_type.value.lower()
+)
     string = 'filep_' if message.text.lower().strip() == "/plink" else 'file_'
     string += file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
