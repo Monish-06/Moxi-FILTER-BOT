@@ -174,38 +174,3 @@ def unpack_new_file_id(new_file_id):
     )
     return file_id
     
-async def insert_linked_file(file_id, chat_id, message_id, file_name, file_size, file_caption, file_type):
-    """Insert file details from /link or forwarded file into DB."""
-
-    file = {
-        'file_id': file_id,
-        'chat_id': chat_id,
-        'message_id': message_id,
-        'file_name': file_name,
-        'file_size': file_size,
-        'caption': file_caption,
-        'file_type': file_type
-    }
-
-    if is_file_already_saved(file_id, file_name):
-        return False, 0
-
-    try:
-        col.insert_one(file)
-        print(f"File saved via link command: {file_name}")
-        return True, 1
-    except DuplicateKeyError:
-        print(f"File already saved via link command: {file_name}")
-        return False, 0
-    except Exception as e:
-        if MULTIPLE_DATABASE:
-            try:
-                sec_col.insert_one(file)
-                print(f"File saved to second DB: {file_name}")
-                return True, 1
-            except DuplicateKeyError:
-                print(f"File already in second DB: {file_name}")
-                return False, 0
-        else:
-            print(f"Error saving file: {e}")
-            return False, 0
