@@ -8,7 +8,6 @@ from pyrogram import filters, Client, enums
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
 from info import ADMINS, LOG_CHANNEL, FILE_STORE_CHANNEL, PUBLIC_FILE_STORE
 from database.ia_filterdb import unpack_new_file_id
-from database.ia_filterdb import insert_linked_file
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,35 +21,13 @@ async def allowed(_, __, message):
 
 @Client.on_message(filters.command(['link', 'plink']) & filters.create(allowed))
 async def gen_link_s(bot, message):
-    replied = message.reply_to_message
-    if not replied:
-        vj = await bot.ask(chat_id=message.from_user.id, text="Now send me your message which you want to store.")
-        replied = vj
-
-    if not replied:
-        return await message.reply("I didn’t receive any file/message to process.")
-
-    file_type = replied.media
+    vj = await bot.ask(chat_id = message.from_user.id, text = "Now Send Me Your Message Which You Want To Store.")
+    file_type = vj.media
     if file_type not in [enums.MessageMediaType.VIDEO, enums.MessageMediaType.AUDIO, enums.MessageMediaType.DOCUMENT]:
-        return await message.reply("Send me only video, audio, or document.")
-
+        return await vj.reply("Send me only video,audio,file or document.")
     if message.has_protected_content and message.chat.id not in ADMINS:
         return await message.reply("okDa")
-
-    result = unpack_new_file_id(getattr(replied, file_type.value).file_id)
-    file_id = result[0]
-    ref = result[1] if len(result) > 1 else None
-    if not ref:
-        return await message.reply_text("This file cannot be linked right now. Try forwarding it to me again.")
-    await insert_linked_file(
-    file_id=file_id,
-    chat_id=replied.chat.id,
-    message_id=replied.id,
-    file_name=getattr(getattr(replied, file_type.value), "file_name", "No Name"),
-    file_size=getattr(getattr(replied, file_type.value), "file_size", 0),
-    file_caption=replied.caption or "",
-    file_type=file_type.value.lower()
-)
+    file_id, ref = unpack_new_file_id((getattr(vj, file_type.value)).file_id)
     string = 'filep_' if message.text.lower().strip() == "/plink" else 'file_'
     string += file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
