@@ -1,5 +1,3 @@
-from filestore.filestore_handler import handle_file  # this auto registers the handler
-
 
 # Don't Remove Credit @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
