@@ -2558,8 +2558,12 @@ async def auto_filter(bot, name, message, reply_msg, ai_search, spell_data=None)
 
     try:
         print(f"[AUTO_FILTER DEBUG] Searching for: {name}")
-        print(f"[AUTO_FILTER DEBUG] Chat ID: {message.chat.id}, User ID: {message.from_user.id}")
+        if message.from_user:
+            print(f"[AUTO_FILTER DEBUG] Chat ID: {message.chat.id}, User ID: {message.from_user.id}")
+        else:
+            print(f"[AUTO_FILTER DEBUG] Chat ID: {message.chat.id}, User is anonymous or missing")
 
+        # Get results globally (your DB is not chat_id-dependent)
         files, offset, total_results = await get_search_results(
             chat_id=message.chat.id,
             query=name,
@@ -2573,12 +2577,16 @@ async def auto_filter(bot, name, message, reply_msg, ai_search, spell_data=None)
             await reply_msg.edit_text(f"**⚠️ No File Found For Your Query - {name}**")
             return
 
-        # Build a simple reply with file names (or use your existing button logic here)
+        # Generate a basic result list (or use your existing button logic)
         caption = f"**🔍 Results for:** `{name}`\n\n"
         for i, file in enumerate(files, 1):
             caption += f"**{i}.** `{file['file_name']}`\n"
 
-        await reply_msg.edit_text(caption)
+        # Avoid Telegram MESSAGE_NOT_MODIFIED error
+        if reply_msg.text != caption:
+            await reply_msg.edit_text(caption)
+        else:
+            print("[AUTO_FILTER INFO] Skipped edit: Message already has the same content")
 
     except Exception as e:
         print("[AUTO_FILTER ERROR]", str(e))
