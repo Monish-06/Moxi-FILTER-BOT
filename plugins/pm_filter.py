@@ -2625,7 +2625,8 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
         try:
             await reply_msg.edit_text("❌ Error while processing your request.")
         except:
-            passasync def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
+            pass
+            async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
     mv_id = msg.id
     mv_rqst = name
     reqstr1 = msg.from_user.id if msg.from_user else 0
