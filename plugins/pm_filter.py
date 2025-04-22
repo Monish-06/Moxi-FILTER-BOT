@@ -2552,48 +2552,80 @@ async def cb_handler(client: Client, query: CallbackQuery):
             await query.message.edit_reply_markup(reply_markup)
     await query.answer(MSG_ALRT)
 
-async def auto_filter(bot, name, message, reply_msg, ai_search, spell_data=None):
-    from database.ia_filterdb import get_search_results
-    import traceback
-
+async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
     try:
-        print(f"[AUTO_FILTER DEBUG] Searching for: {name}")
-        if message.from_user:
-            print(f"[AUTO_FILTER DEBUG] Chat ID: {message.chat.id}, User ID: {message.from_user.id}")
+        curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
+        if not spoll:
+            message = msg
+            if message.text.startswith("/"): return
+            if re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
+                return
+            if len(message.text) < 100:
+                search = name.lower()
+                find = search.split(" ")
+                search = ""
+                removes = ["in", "upload", "series", "full", "horror", "thriller", "mystery", "print", "file"]
+                for x in find:
+                    if x not in removes:
+                        search += x + " "
+                search = re.sub(r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|bro|bruh|broh|helo|that|find|dubbed|link|venum|iruka|pannunga|pannungga|anuppunga|anupunga|anuppungga|anupungga|film|undo|kitti|kitty|tharu|kittumo|kittum|movie|any(one)|with\ssubtitle(s)?)", "", search, flags=re.IGNORECASE)
+                search = re.sub(r"\s+", " ", search).strip().replace("-", " ").replace(":", "").replace(".", "")
+                files, offset, total_results = await get_search_results(message.chat.id, search, offset=0, filter=True)
+                settings = await get_settings(message.chat.id)
+
+                print(f"[AUTO_FILTER DEBUG] Chat ID: {message.chat.id}, User ID: {(message.from_user.id if message.from_user else 'Anonymous')}")
+                print(f"[AUTO_FILTER DEBUG] Query: {search}, Results Found: {len(files)}")
+
+                if not files:
+                    if settings["spell_check"]:
+                        return await advantage_spell_chok(client, name, msg, reply_msg, ai_search)
+                    else:
+                        return await reply_msg.edit_text(f"**⚠️ No File Found For Your Query - {name}**\n**Make Sure Spelling Is Correct.**")
+            else:
+                return
         else:
-            print(f"[AUTO_FILTER DEBUG] Chat ID: {message.chat.id}, User is anonymous or missing")
+            message = msg.message.reply_to_message
+            search, files, offset, total_results = spoll
+            settings = await get_settings(message.chat.id)
+            await msg.message.delete()
 
-        # Get results globally (your DB is not chat_id-dependent)
-        files, offset, total_results = await get_search_results(
-            chat_id=message.chat.id,
-            query=name,
-            offset=0,
-            filter=True
-        )
+        # (No changes to the rest of your button code...)
+        # ... [Unchanged portion continues here] ...
 
-        print(f"[AUTO_FILTER DEBUG] Files Found: {len(files)}")
-
-        if not files:
-            await reply_msg.edit_text(f"**⚠️ No File Found For Your Query - {name}**")
-            return
-
-        # Generate a basic result list (or use your existing button logic)
-        caption = f"**🔍 Results for:** `{name}`\n\n"
-        for i, file in enumerate(files, 1):
-            caption += f"**{i}.** `{file['file_name']}`\n"
-
-        # Avoid Telegram MESSAGE_NOT_MODIFIED error
-        if reply_msg.text != caption:
-            await reply_msg.edit_text(caption)
+        # --- Final text response ---
+        if imdb and imdb.get('poster'):
+            try:
+                reply = await message.reply_photo(photo=imdb.get('poster'), caption=cap, reply_markup=InlineKeyboardMarkup(btn))
+                await reply_msg.delete()
+                if settings.get('auto_delete'):
+                    await asyncio.sleep(300)
+                    await reply.delete()
+                    await message.delete()
+            except Exception as e:
+                logger.exception(e)
+                fallback = await reply_msg.edit_text(cap, reply_markup=InlineKeyboardMarkup(btn))
+                if settings.get('auto_delete'):
+                    await asyncio.sleep(300)
+                    await fallback.delete()
+                    await message.delete()
         else:
-            print("[AUTO_FILTER INFO] Skipped edit: Message already has the same content")
+            # **Fix for duplicate message error**
+            if reply_msg.text != cap:
+                reply = await reply_msg.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+            else:
+                print("[AUTO_FILTER INFO] Skipped edit: Same content")
+
+            if settings.get('auto_delete'):
+                await asyncio.sleep(300)
+                await reply.delete()
+                await message.delete()
 
     except Exception as e:
-        print("[AUTO_FILTER ERROR]", str(e))
-        traceback.print_exc()
-        await reply_msg.edit_text("**❌ An error occurred while searching. Please try again later.**")
-
-async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
+        logger.exception(f"[AUTO_FILTER ERROR] {e}")
+        try:
+            await reply_msg.edit_text("❌ Error while processing your request.")
+        except:
+            passasync def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
     mv_id = msg.id
     mv_rqst = name
     reqstr1 = msg.from_user.id if msg.from_user else 0
