@@ -22,7 +22,7 @@ sec_db = sec_client[DATABASE_NAME]
 sec_col = sec_db[COLLECTION_NAME]
 
 file_buffer = []
-BUFFER_SIZE = 500
+BUFFER_SIZE = 250
 
 async def save_file(media):
     file_id = unpack_new_file_id(media.file_id)
@@ -35,25 +35,17 @@ async def save_file(media):
         'caption': media.caption.html if media.caption else None
     }
 
-    if is_file_already_saved(file_id, file_name):
+    # Check for duplicates (make sure this uses `await`)
+    if await col.find_one({"file_id": file_id, "file_name": file_name}):
         return False, 0
-        
-    for f in file_buffer:
-        if f['file_id'] == file_id or f['file_name'] == file_name:
-            return False, 0  # Already in buffer
-    file_buffer.append(file)
 
-    if len(file_buffer) >= BUFFER_SIZE:
-        try:
-            await col.insert_many(file_buffer.copy())  # Bulk save
-            file_buffer.clear()
-            print(f"Saved {BUFFER_SIZE} files in one go!")
-            return True, BUFFER_SIZE
-        except Exception as e:
-            print(f"Failed to save files: {e}")
-            return False, 0
-
-    return True, 1
+    try:
+        await col.insert_one(file)
+        print(f"Saved: {file_name}")
+        return True, 1
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        return False, 0
 
 
 def clean_file_name(file_name):
