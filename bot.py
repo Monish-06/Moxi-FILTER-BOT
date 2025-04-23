@@ -3,17 +3,23 @@
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 import threading
-import requests
 import time
- 
+import requests
+
 def keep_alive():
+    urls = [
+        "https://exotic-darb-monish2807-df2d5a43.koyeb.app/",
+        "https://scornful-andreana-moxi35-c66f799a.koyeb.app/"  # Replace with your second bot's URL
+    ]
+    
     while True:
-        try:
-            requests.get("https://exotic-darb-monish2807-df2d5a43.koyeb.app/")
-        except:
-            pass
-        time.sleep(90)  # Ping every 5 minutes
- 
+        for url in urls:
+            try:
+                requests.get(url)
+            except:
+                pass
+        time.sleep(90)  # Ping every 90 seconds
+
 threading.Thread(target=keep_alive, daemon=True).start()
 
 # Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
