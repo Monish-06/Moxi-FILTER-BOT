@@ -22,7 +22,7 @@ sec_db = sec_client[DATABASE_NAME]
 sec_col = sec_db[COLLECTION_NAME]
 
 file_buffer = []
-BUFFER_SIZE = 1000
+BUFFER_SIZE = 500
 
 async def save_file(media):
     file_id = unpack_new_file_id(media.file_id)
