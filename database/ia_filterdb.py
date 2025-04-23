@@ -39,8 +39,8 @@ async def save_file(media):
         return False, 0
         
     for f in file_buffer:
-    if f['file_id'] == file_id or f['file_name'] == file_name:
-        return False, 0  # Already in buffer
+        if f['file_id'] == file_id or f['file_name'] == file_name:
+            return False, 0  # Already in buffer
     file_buffer.append(file)
 
     if len(file_buffer) >= BUFFER_SIZE:
