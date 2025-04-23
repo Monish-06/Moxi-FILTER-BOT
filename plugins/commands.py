@@ -493,10 +493,7 @@ async def start(client, message):
     user = message.from_user.id
     files_ = await get_file_details(file_id)           
     if not files_:
-        raw = base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))  # don’t decode to string yet
-        pre, file_id = raw.split(b"_", 1)  # split as bytes
-        file_id = file_id.decode()         # now decode the file_id part safely
-        pre = pre.decode()
+        pre, file_id = ((base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))).decode("ascii")).split("_", 1)
         try:
             if not await db.has_premium_access(message.from_user.id):
                 if not await check_verification(client, message.from_user.id) and VERIFY == True:
