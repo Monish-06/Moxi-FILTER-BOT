@@ -52,8 +52,6 @@ async def save_file(media):
 
     return True, 1
 
-# Call after final batch of files
-await flush_remaining_files()
 
 def clean_file_name(file_name):
     """Clean and format the file name."""
@@ -174,8 +172,3 @@ def unpack_new_file_id(new_file_id):
     )
     return file_id
     
-async def flush_remaining_files():
-    if file_buffer:
-        await col.insert_many(file_buffer.copy())
-        print(f"Saved {len(file_buffer)} leftover files.")
-        file_buffer.clear()
