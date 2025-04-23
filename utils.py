@@ -492,9 +492,12 @@ async def get_shortlink(link):
         # Construct the safelink URL with the encoded link
         safelink_url = f"https://moxibeatz.fun/p/1.html?url={encoded_link}"
         return safelink_url
+        print("Original Link:", original_link)
+        print("Encoded Link:", encoded_link)
     except Exception as e:
         logger.error(f"Safelink generation error: {e}")
         return link
+        
 
     
 async def get_tutorial(chat_id):
