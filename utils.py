@@ -583,28 +583,8 @@ async def check_verification(bot, userid):
         return False  
     
 async def send_all(bot, userid, files, ident, chat_id, user_name, query):
-    try:
-        for file in files:
-            title = file["file_name"]
-            size = get_size(file["file_size"])
-            original_url = f"https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}"
-            short_url = await get_shortlink(original_url)
-
-            await bot.send_message(
-                chat_id=userid,
-                text=f"<b>Hᴇʏ ᴛʜᴇʀᴇ {user_name} 👋🏽\n\n✅ Sᴇᴄᴜʀᴇ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ.\n\n🗃️ Fɪʟᴇ Nᴀᴍᴇ: {title}\n🔖 Fɪʟᴇ Sɪᴢᴇ: {size}</b>",
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("📤 Dᴏᴡɴʟᴏᴀᴅ 📥", url=short_url)]]
-                )
-            )
-    except UserIsBlocked:
-        await query.answer('Uɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ ᴍᴀʜɴ !', show_alert=True)
-    except PeerIdInvalid:
-        await query.answer('Hᴇʏ, Sᴛᴀʀᴛ Bᴏᴛ Fɪʀsᴛ Aɴᴅ Cʟɪᴄᴋ Sᴇɴᴅ Aʟʟ', show_alert=True)
-    except Exception as e:
-        await query.answer('Sᴏᴍᴇᴛʜɪɴɢ ᴡᴇɴᴛ ᴡʀᴏɴɢ', show_alert=True)
-        print(f"[send_all error] {e}")
-
+    return
+    
 
 async def get_cap(settings, remaining_seconds, files, query, total_results, search):
     if settings["imdb"]:
