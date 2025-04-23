@@ -95,14 +95,14 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
         cursor1 = col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
         cursor2 = sec_col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
         
-        for file in cursor1:
+        async for file in cursor1:
             files.append(file)
-        for file in cursor2:
+        async for file in cursor2:
             files.append(file)
     else:
         cursor = col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
         
-        for file in cursor:
+        async for file in cursor:
             files.append(file)
 
     total_results = col.count_documents(filter) if not MULTIPLE_DATABASE else (col.count_documents(filter) + sec_col.count_documents(filter))
