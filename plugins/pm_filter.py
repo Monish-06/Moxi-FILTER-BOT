@@ -2598,14 +2598,30 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
         temp.GETALL[key] = files
         temp.SHORT[message.from_user.id] = message.chat.id
         if settings["button"]:
-            btn = [
-                [
+            btn = []
+            for file in files:
+                filename = file["file_name"]
+                file_id = file["file_id"]
+    
+    # Create the long URL
+                original_url = f"https://t.me/{temp.U_NAME}?start=files_{file_id}"
+
+    # Generate shortlink
+                short_url = await get_shortlink(original_url)
+
+    # Clean file name (remove unwanted parts)
+                display_name = ' '.join(filter(
+                    lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'),
+                    filename.split()
+                ))
+
+            # Add button with shortlink
+                btn.append([
                     InlineKeyboardButton(
-                        text=f"[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}", callback_data=f'{pre}#{file["file_id"]}'
-                    ),
-                ]
-                for file in files
-            ]
+                        text=f"[{get_size(file['file_size'])}] {display_name}",
+                        url=short_url
+                    )
+                ])
             btn.insert(0, 
                 [
                     InlineKeyboardButton(f'ǫᴜᴀʟɪᴛʏ', callback_data=f"qualities#{key}"),
