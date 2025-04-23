@@ -37,7 +37,10 @@ async def save_file(media):
 
     if is_file_already_saved(file_id, file_name):
         return False, 0
-
+        
+    for f in file_buffer:
+    if f['file_id'] == file_id or f['file_name'] == file_name:
+        return False, 0  # Already in buffer
     file_buffer.append(file)
 
     if len(file_buffer) >= BUFFER_SIZE:
@@ -105,7 +108,7 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
         async for file in cursor:
             files.append(file)
 
-    total_results = col.count_documents(filter) if not MULTIPLE_DATABASE else (col.count_documents(filter) + sec_col.count_documents(filter))
+    total_results = await col.count_documents(filter) if not MULTIPLE_DATABASE else (col.count_documents(filter) + sec_col.count_documents(filter))
     next_offset = "" if (offset + max_results) >= total_results else (offset + max_results)
 
     return files, next_offset, total_results
