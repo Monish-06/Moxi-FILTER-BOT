@@ -2,30 +2,32 @@
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
+
 import re, base64, json
 from struct import pack
 from pyrogram.file_id import FileId
-from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from info import FILE_DB_URI, SEC_FILE_DB_URI, DATABASE_NAME, COLLECTION_NAME, MULTIPLE_DATABASE, USE_CAPTION_FILTER, MAX_B_TN
+from motor.motor_asyncio import AsyncIOMotorClient
+client = AsyncIOMotorClient(FILE_DB_URI)
+
 
 # First Database For File Saving 
-client = MongoClient(FILE_DB_URI)
 db = client[DATABASE_NAME]
 col = db[COLLECTION_NAME]
 
 # Second Database For File Saving
-sec_client = MongoClient(SEC_FILE_DB_URI)
+sec_client = AsyncIOMotorClient(SEC_FILE_DB_URI)
 sec_db = sec_client[DATABASE_NAME]
 sec_col = sec_db[COLLECTION_NAME]
 
+file_buffer = []
+BUFFER_SIZE = 500
 
 async def save_file(media):
-    """Save file in the database."""
-    
     file_id = unpack_new_file_id(media.file_id)
     file_name = clean_file_name(media.file_name)
-    
+
     file = {
         'file_id': file_id,
         'file_name': file_name,
@@ -36,24 +38,22 @@ async def save_file(media):
     if is_file_already_saved(file_id, file_name):
         return False, 0
 
-    try:
-        col.insert_one(file)
-        print(f"{file_name} is successfully saved.")
-        return True, 1
-    except DuplicateKeyError:
-        print(f"{file_name} is already saved.")
-        return False, 0
-    except:
-        if MULTIPLE_DATABASE:
-            try:
-                sec_col.insert_one(file)
-                print(f"{file_name} is successfully saved.")
-                return True, 1
-            except DuplicateKeyError:
-                print(f"{file_name} is already saved.")
-                return False, 0
-        else:
-            print("Your Current File Database Is Full, Turn On Multiple Database Feature And Add Second File Mongodb To Save File.")
+    file_buffer.append(file)
+
+    if len(file_buffer) >= BUFFER_SIZE:
+        try:
+            await col.insert_many(file_buffer.copy())  # Bulk save
+            file_buffer.clear()
+            print(f"Saved {BUFFER_SIZE} files in one go!")
+            return True, BUFFER_SIZE
+        except Exception as e:
+            print(f"Failed to save files: {e}")
+            return False, 0
+
+    return True, 1
+
+# Call after final batch of files
+await flush_remaining_files()
 
 def clean_file_name(file_name):
     """Clean and format the file name."""
@@ -174,3 +174,8 @@ def unpack_new_file_id(new_file_id):
     )
     return file_id
     
+async def flush_remaining_files():
+    if file_buffer:
+        await col.insert_many(file_buffer.copy())
+        print(f"Saved {len(file_buffer)} leftover files.")
+        file_buffer.clear()
