@@ -2602,7 +2602,7 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
                 [
                     InlineKeyboardButton(
                         text=f"[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}",
-                        url = await get_shortlink(f"https://telegram.dog/{temp.U_NAME}?start=pre_{file['file_id']}")
+                        url = await get_shortlink(f"https://telegram.dog/{temp.U_NAME}?start=pre_{file['_id']}")
                     )
                 ]
                 for file in files
