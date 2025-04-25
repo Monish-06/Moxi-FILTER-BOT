@@ -2,50 +2,58 @@
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-
 import re, base64, json
 from struct import pack
 from pyrogram.file_id import FileId
+from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from info import FILE_DB_URI, SEC_FILE_DB_URI, DATABASE_NAME, COLLECTION_NAME, MULTIPLE_DATABASE, USE_CAPTION_FILTER, MAX_B_TN
-from motor.motor_asyncio import AsyncIOMotorClient
-client = AsyncIOMotorClient(FILE_DB_URI)
-
 
 # First Database For File Saving 
+client = MongoClient(FILE_DB_URI)
 db = client[DATABASE_NAME]
 col = db[COLLECTION_NAME]
 
 # Second Database For File Saving
-sec_client = AsyncIOMotorClient(SEC_FILE_DB_URI)
+sec_client = MongoClient(SEC_FILE_DB_URI)
 sec_db = sec_client[DATABASE_NAME]
 sec_col = sec_db[COLLECTION_NAME]
 
-file_buffer = []
-BUFFER_SIZE = 500
 
 async def save_file(media):
+    """Save file in the database."""
+    
     file_id = unpack_new_file_id(media.file_id)
     file_name = clean_file_name(media.file_name)
-
+    
     file = {
         'file_id': file_id,
         'file_name': file_name,
-        'file_size': media.file_size
+        'file_size': media.file_size,
+        'caption': media.caption.html if media.caption else None
     }
 
-    # Check for duplicates (make sure this uses `await`)
-    if await col.find_one({"file_id": file_id, "file_name": file_name}):
+    if is_file_already_saved(file_id, file_name):
         return False, 0
 
     try:
-        await col.insert_one(file)
-        print(f"Saved: {file_name}")
+        col.insert_one(file)
+        print(f"{file_name} is successfully saved.")
         return True, 1
-    except Exception as e:
-        print(f"Error saving file: {e}")
+    except DuplicateKeyError:
+        print(f"{file_name} is already saved.")
         return False, 0
-
+    except:
+        if MULTIPLE_DATABASE:
+            try:
+                sec_col.insert_one(file)
+                print(f"{file_name} is successfully saved.")
+                return True, 1
+            except DuplicateKeyError:
+                print(f"{file_name} is already saved.")
+                return False, 0
+        else:
+            print("Your Current File Database Is Full, Turn On Multiple Database Feature And Add Second File Mongodb To Save File.")
 
 def clean_file_name(file_name):
     """Clean and format the file name."""
@@ -89,17 +97,17 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
         cursor1 = col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
         cursor2 = sec_col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
         
-        async for file in cursor1:
+        for file in cursor1:
             files.append(file)
-        async for file in cursor2:
+        for file in cursor2:
             files.append(file)
     else:
         cursor = col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
         
-        async for file in cursor:
+        for file in cursor:
             files.append(file)
 
-    total_results = await col.count_documents(filter) if not MULTIPLE_DATABASE else (col.count_documents(filter) + sec_col.count_documents(filter))
+    total_results = col.count_documents(filter) if not MULTIPLE_DATABASE else (col.count_documents(filter) + sec_col.count_documents(filter))
     next_offset = "" if (offset + max_results) >= total_results else (offset + max_results)
 
     return files, next_offset, total_results
