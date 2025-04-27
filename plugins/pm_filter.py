@@ -763,7 +763,12 @@ async def filter_languages_cb_handler(client: Client, query: CallbackQuery):
             )
         except MessageNotModified:
             pass
-    await query.answer()
+    async def filter_languages_cb_handler(client, query):
+    try:
+        await query.answer()
+    except:
+        pass
+    # rest of your code...
     
     
     
