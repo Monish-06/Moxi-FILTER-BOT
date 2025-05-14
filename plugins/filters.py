@@ -153,6 +153,8 @@ async def get_all(client, message):
 
     # Fetch and display filters
     texts = await get_filters(grp_id)
+    import random
+    random.shuffle(texts)  # Randomize order each time
     count = await count_filters(grp_id)
     if count:
         filterlist = f"Total number of filters in **{title}** : {count}\n\n"
