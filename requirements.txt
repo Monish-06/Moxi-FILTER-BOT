@@ -1,3 +1,4 @@
+rapidfuzz
 pyrofork==2.3.45
 tgcrypto 
 requests 
