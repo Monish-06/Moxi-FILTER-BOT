@@ -1,4 +1,4 @@
-from MoxiFILTERBOT.database.db import missed_db
+from database.db import missed_db
 from pymongo import DESCENDING
 
 async def add_missing_filter(group_id: int, keyword: str):
