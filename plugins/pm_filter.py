@@ -2887,7 +2887,7 @@ async def manual_filters(client, message, text=False):
     except:
         pass
 
-    if best_match and score > 80:  # adjust score as needed
+    if best_match and score > 90:  # adjust score as needed
         matched_keyword = keyword_map[best_match]
         reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
@@ -2951,7 +2951,7 @@ async def manual_filters(client, message, text=False):
     else:
         # ❌ No match found — send default reply
         await message.reply_text(
-            "<b>This movie clips is not available now 🥲. We will update soon 🙃🤝</b> ❗",
+            "<b>This movie clips is not available now 🥲. We will update soon 🙃🤝</b>",
             quote=True
         )
         return False
