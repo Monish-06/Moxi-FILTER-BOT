@@ -54,33 +54,27 @@ async def show_missing_stats(client, message):
     await message.reply_text(text)
 
 
-from database.missing import delete_missing_filter
+from database.missing import remove_missing_filter
 
 @Client.on_message(filters.command("remove") & filters.private)
-async def remove_missing_keyword(client, message):
+async def remove_missing_cmd(client, message):
     if message.from_user.id not in ALLOWED_ADMINS:
         return await message.reply_text("You are not allowed to use this command.")
 
-    parts = message.text.split(None, 2)
-    if len(parts) < 3:
+    if len(message.command) < 3:
         return await message.reply_text("Usage: /remove <group_id> <keyword>")
 
     try:
-        group_id = int(parts[1])
+        group_id = int(message.command[1])
+        keyword = " ".join(message.command[2:]).strip()
     except ValueError:
         return await message.reply_text("Invalid group ID.")
 
-    keyword = parts[2].strip().lower()
-    await delete_missing_filter(group_id, keyword)
-
-    # Verify deletion by checking if it still exists
-    from database.missing import missed_db
-    still_exists = await missed_db.find_one({"chat_id": group_id, "keyword": keyword})
-    if still_exists:
-        return await message.reply_text("❌ Could not remove. Double-check the keyword.")
-    
-    await message.reply_text(f"✅ Removed: <b>{keyword}</b> from group <code>{group_id}</code>")
-
+    success = await remove_missing_filter(group_id, keyword)
+    if success:
+        await message.reply_text(f"✅ Removed <code>{keyword}</code> from group <code>{group_id}</code>.")
+    else:
+        await message.reply_text(f"❌ Could not find <code>{keyword}</code> in missing stats.")
 
 
 
