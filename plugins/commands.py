@@ -72,7 +72,16 @@ async def remove_missing_keyword(client, message):
 
     keyword = parts[2].strip().lower()
     await delete_missing_filter(group_id, keyword)
+
+    # Verify deletion by checking if it still exists
+    from database.missing import missed_db
+    still_exists = await missed_db.find_one({"chat_id": group_id, "keyword": keyword})
+    if still_exists:
+        return await message.reply_text("❌ Could not remove. Double-check the keyword.")
+    
     await message.reply_text(f"✅ Removed: <b>{keyword}</b> from group <code>{group_id}</code>")
+
+
 
 
 @Client.on_message(filters.command("start") & filters.incoming)
