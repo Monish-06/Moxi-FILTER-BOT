@@ -49,8 +49,7 @@ async def show_missing_stats(client, message):
 
     text = "<b>📊 Most Requested (Missing) Filters:</b>\n\n"
     for i, item in enumerate(missing, start=1):
-        text += f"{i}. <code>{item['keyword']}</code> — {item['count']} times\n"
-
+        text += f"{i}. <code>{item['keyword'].strip().lower()}</code> — {item['count']} times\n"
     await message.reply_text(text)
 
 
