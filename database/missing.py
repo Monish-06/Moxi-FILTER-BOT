@@ -10,3 +10,7 @@ async def add_missing_filter(group_id: int, keyword: str):
 
 async def get_top_missing(group_id: int, limit=10):
     return await missed_db.find({"group_id": group_id}).sort("count", DESCENDING).to_list(length=limit)
+
+
+async def delete_missing_filter(chat_id: int, keyword: str):
+    await missed_db.delete_one({"chat_id": chat_id, "keyword": keyword.lower()})
