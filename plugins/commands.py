@@ -25,7 +25,7 @@ join_db = JoinReqs
 
 
 from pyrogram import Client, filters
-from MoxiFILTERBOT.database.missing import get_top_missing
+from database.missing import get_top_missing
 
 # Replace with your allowed Telegram user IDs (not all admins)
 ALLOWED_ADMINS = [6476946240, 6857114625, 7737413406]
