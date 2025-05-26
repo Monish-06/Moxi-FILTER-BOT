@@ -54,6 +54,25 @@ async def show_missing_stats(client, message):
     await message.reply_text(text)
 
 
+from database.missing import delete_missing_filter
+
+@Client.on_message(filters.command("remove") & filters.private)
+async def remove_missing_keyword(client, message):
+    if message.from_user.id not in ALLOWED_ADMINS:
+        return await message.reply_text("You are not allowed to use this command.")
+
+    parts = message.text.split(None, 2)
+    if len(parts) < 3:
+        return await message.reply_text("Usage: /remove <group_id> <keyword>")
+
+    try:
+        group_id = int(parts[1])
+    except ValueError:
+        return await message.reply_text("Invalid group ID.")
+
+    keyword = parts[2].strip().lower()
+    await delete_missing_filter(group_id, keyword)
+    await message.reply_text(f"✅ Removed: <b>{keyword}</b> from group <code>{group_id}</code>")
 
 
 @Client.on_message(filters.command("start") & filters.incoming)
