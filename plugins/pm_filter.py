@@ -2956,7 +2956,7 @@ async def manual_filters(client, message, text=False):
             "<b>This movie clips is not available now 🥲. We will update soon 🙃🤝</b>",
             quote=True
         )
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
         try:
             await msg.delete()
         except:
