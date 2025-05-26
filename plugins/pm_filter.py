@@ -2862,218 +2862,108 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
             if settings['auto_delete']:
                 await asyncio.sleep(600)
                 await spell_check_del.delete()
-                
+
+
+
+from rapidfuzz import process, fuzz  # Make sure this is imported
+
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
     group_id = message.chat.id
     name = text or message.text
     reply_id = message.reply_to_message.id if message.reply_to_message else message.id
     keywords = await get_filters(group_id)
-    #for keyword in reversed(sorted(keywords, key=len)):
-        #pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
-        #if re.search(pattern, name, flags=re.IGNORECASE):
-            #reply_text, btn, alert, fileid = await find_filter(group_id, keyword)
 
-            #if reply_text:
-                #reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
-    from rapidfuzz import process, fuzz  # 🔺 Add this at the top of your file if not already
+    if not keywords:
+        return False
 
-    # Convert all keywords to lowercase
+    # Use fuzzy matching to find best keyword
     keyword_map = {k.lower(): k for k in keywords}
+    best_match = None
+    score = 0
 
-    # Use fuzzy matching to get the closest keyword
-    best_match, score, _ = process.extractOne(name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
+    try:
+        best_match, score, _ = process.extractOne(name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
+    except:
+        pass
 
-    if best_match and score > 70:  # You can adjust the threshold (80 = 80% match)
+    if best_match and score > 80:  # adjust score as needed
         matched_keyword = keyword_map[best_match]
         reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
         if reply_text:
             reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
-    # 🔁 The rest of your existing code continues here
-    # No changes needed below this point
-    # (starting from: if btn is not None: ...)
-            if btn is not None:
-                try:
-                    if fileid == "None":
-                        if btn == "[]":
-                            joelkb = await client.send_message(
-                                group_id, 
-                                reply_text, 
-                                disable_web_page_preview=True,
-                                protect_content=True if settings["file_secure"] else False,
-                                reply_to_message_id=reply_id
-                            )
-                            try:
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                    try:
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                else:
-                                    try:
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_ffilter', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-
-                        else:
-                            button = eval(btn)
-                            joelkb = await client.send_message(
-                                group_id,
-                                reply_text,
-                                disable_web_page_preview=True,
-                                reply_markup=InlineKeyboardMarkup(button),
-                                protect_content=True if settings["file_secure"] else False,
-                                reply_to_message_id=reply_id
-                            )
-                            try:
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                    try:
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                else:
-                                    try:
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_ffilter', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                    elif btn == "[]":
-                        joelkb = await client.send_cached_media(
+        if btn is not None:
+            try:
+                if fileid == "None":
+                    if btn == "[]":
+                        joelkb = await client.send_message(
                             group_id,
-                            fileid,
-                            caption=reply_text or "",
+                            reply_text,
+                            disable_web_page_preview=True,
                             protect_content=True if settings["file_secure"] else False,
                             reply_to_message_id=reply_id
                         )
-                        try:
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                try:
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                            else:
-                                try:
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                        except KeyError:
-                            grpid = await active_connection(str(message.from_user.id))
-                            await save_group_settings(grpid, 'auto_ffilter', True)
-                            settings = await get_settings(message.chat.id)
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
                     else:
                         button = eval(btn)
-                        joelkb = await message.reply_cached_media(
-                            fileid,
-                            caption=reply_text or "",
+                        joelkb = await client.send_message(
+                            group_id,
+                            reply_text,
+                            disable_web_page_preview=True,
                             reply_markup=InlineKeyboardMarkup(button),
+                            protect_content=True if settings["file_secure"] else False,
                             reply_to_message_id=reply_id
                         )
-                        try:
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                try:
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                            else:
-                                try:
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                        except KeyError:
-                            grpid = await active_connection(str(message.from_user.id))
-                            await save_group_settings(grpid, 'auto_ffilter', True)
-                            settings = await get_settings(message.chat.id)
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
+                elif btn == "[]":
+                    joelkb = await client.send_cached_media(
+                        group_id,
+                        fileid,
+                        caption=reply_text or "",
+                        protect_content=True if settings["file_secure"] else False,
+                        reply_to_message_id=reply_id
+                    )
+                else:
+                    button = eval(btn)
+                    joelkb = await message.reply_cached_media(
+                        fileid,
+                        caption=reply_text or "",
+                        reply_markup=InlineKeyboardMarkup(button),
+                        reply_to_message_id=reply_id
+                    )
 
-                except Exception as e:
-                    logger.exception(e)
-                break
+                # Auto filter and delete logic (unchanged)
+                if settings.get('auto_ffilter'):
+                    ai_search = True
+                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
+                    await auto_filter(client, message.text, message, reply_msg, ai_search)
+                    if settings.get('auto_delete'):
+                        await joelkb.delete()
+                else:
+                    if settings.get('auto_delete'):
+                        await asyncio.sleep(600)
+                        await joelkb.delete()
+
+            except Exception as e:
+                logger.exception(e)
+        return True
+
     else:
+        # ❌ No match found — send default reply
+        await message.reply_text(
+            "<b>This movie clips is not available now 🥲. We will update soon 🙃🤝</b> ❗",
+            quote=True
+        )
         return False
+
+
+
+
+
+
+
+
+
 
 async def global_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
