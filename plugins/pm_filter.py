@@ -2869,14 +2869,31 @@ async def manual_filters(client, message, text=False):
     name = text or message.text
     reply_id = message.reply_to_message.id if message.reply_to_message else message.id
     keywords = await get_filters(group_id)
-    for keyword in reversed(sorted(keywords, key=len)):
-        pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
-        if re.search(pattern, name, flags=re.IGNORECASE):
-            reply_text, btn, alert, fileid = await find_filter(group_id, keyword)
+    #for keyword in reversed(sorted(keywords, key=len)):
+        #pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
+        #if re.search(pattern, name, flags=re.IGNORECASE):
+            #reply_text, btn, alert, fileid = await find_filter(group_id, keyword)
 
-            if reply_text:
-                reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
+            #if reply_text:
+                #reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
+    from rapidfuzz import process, fuzz  # 🔺 Add this at the top of your file if not already
 
+    # Convert all keywords to lowercase
+    keyword_map = {k.lower(): k for k in keywords}
+
+    # Use fuzzy matching to get the closest keyword
+    best_match, score, _ = process.extractOne(name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
+
+    if best_match and score > 70:  # You can adjust the threshold (80 = 80% match)
+        matched_keyword = keyword_map[best_match]
+        reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
+
+        if reply_text:
+            reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
+
+    # 🔁 The rest of your existing code continues here
+    # No changes needed below this point
+    # (starting from: if btn is not None: ...)
             if btn is not None:
                 try:
                     if fileid == "None":
