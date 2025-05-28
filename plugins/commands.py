@@ -652,8 +652,8 @@ mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3k
 db = mongo.monish280720  # 👈 Replace this with your DB name
 pending_filters = db.pending_filters
 
-    user_id = message.from_user.id
-    pending = await pending_filters.find_one({"user_id": user_id})
+user_id = message.from_user.id
+pending = await pending_filters.find_one({"user_id": user_id})
 
     if pending:
         group_id = pending.get("group_id")
