@@ -650,8 +650,8 @@ async def start(client, message):
     import asyncio
 
     mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
-    db = mongo.monish280720  # 👈 Replace this with your DB name
-    pending_filters = db.pending_filters
+    mongo_db = mongo.monish280720  # 👈 Replace this with your DB name
+    pending_filters = mongo_db.pending_filters
 
     user_id = message.from_user.id
     pending = await pending_filters.find_one({"user_id": user_id})
