@@ -641,19 +641,20 @@ async def start(client, message):
     await msg.delete()
     await k.edit_text("<b>✅ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ ɪs sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴀɢᴀɪɴ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴ</b>",reply_markup=InlineKeyboardMarkup(btn))
 
-    
 
 
-from pymongo import MongoClient
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import asyncio
 
-mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
-db = mongo.monish280720  # 👈 Replace this with your DB name
-pending_filters = db.pending_filters
 
-user_id = message.from_user.id
-pending = await pending_filters.find_one({"user_id": user_id})
+    from pymongo import MongoClient
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    import asyncio
+
+    mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
+    db = mongo.monish280720  # 👈 Replace this with your DB name
+    pending_filters = db.pending_filters
+
+    user_id = message.from_user.id
+    pending = await pending_filters.find_one({"user_id": user_id})
 
     if pending:
         group_id = pending.get("group_id")
@@ -685,6 +686,8 @@ pending = await pending_filters.find_one({"user_id": user_id})
                 print(f"[Pending Filter ERROR]: {e}")
 
         await pending_filters.delete_one({"user_id": user_id})
+    
+
     
     return   
 
