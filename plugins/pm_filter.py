@@ -2865,7 +2865,16 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 
 
 
-from rapidfuzz import process, fuzz  # Make sure this is imported
+
+
+from rapidfuzz import process, fuzz
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pymongo import MongoClient
+import asyncio
+
+mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
+db = mongo.  # change this to your DB name
+pending_filters = db.pending_filters
 
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
@@ -2877,7 +2886,6 @@ async def manual_filters(client, message, text=False):
     if not keywords:
         return False
 
-    # Use fuzzy matching to find best keyword
     keyword_map = {k.lower(): k for k in keywords}
     best_match = None
     score = 0
@@ -2887,71 +2895,68 @@ async def manual_filters(client, message, text=False):
     except:
         pass
 
-    if best_match and score > 90:  # adjust score as needed
+    if best_match and score > 90:
         matched_keyword = keyword_map[best_match]
         reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
         if reply_text:
             reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
-        if btn is not None:
+        user_id = message.from_user.id
+
+        try:
+            await client.send_chat_action(user_id, "typing")
+            started = True
+        except:
+            started = False
+
+        if started:
             try:
+                button = eval(btn) if btn != "[]" else None
+
                 if fileid == "None":
-                    if btn == "[]":
-                        joelkb = await client.send_message(
-                            group_id,
-                            reply_text,
-                            disable_web_page_preview=True,
-                            protect_content=True if settings["file_secure"] else False,
-                            reply_to_message_id=reply_id
-                        )
-                    else:
-                        button = eval(btn)
-                        joelkb = await client.send_message(
-                            group_id,
-                            reply_text,
-                            disable_web_page_preview=True,
-                            reply_markup=InlineKeyboardMarkup(button),
-                            protect_content=True if settings["file_secure"] else False,
-                            reply_to_message_id=reply_id
-                        )
-                elif btn == "[]":
-                    joelkb = await client.send_cached_media(
-                        group_id,
-                        fileid,
-                        caption=reply_text or "",
-                        protect_content=True if settings["file_secure"] else False,
-                        reply_to_message_id=reply_id
+                    msg = await client.send_message(
+                        chat_id=user_id,
+                        text=reply_text,
+                        reply_markup=InlineKeyboardMarkup(button) if button else None,
+                        disable_web_page_preview=True
                     )
                 else:
-                    button = eval(btn)
-                    joelkb = await message.reply_cached_media(
-                        fileid,
+                    msg = await client.send_cached_media(
+                        chat_id=user_id,
+                        file_id=fileid,
                         caption=reply_text or "",
-                        reply_markup=InlineKeyboardMarkup(button),
-                        reply_to_message_id=reply_id
+                        reply_markup=InlineKeyboardMarkup(button) if button else None
                     )
 
-                # Auto filter and delete logic (unchanged)
-                if settings.get('auto_ffilter'):
-                    ai_search = True
-                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                    if settings.get('auto_delete'):
-                        await joelkb.delete()
-                else:
-                    if settings.get('auto_delete'):
-                        await asyncio.sleep(600)
-                        await joelkb.delete()
+                await message.reply(
+                    "📩 I've sent you the filter privately.",
+                    reply_markup=InlineKeyboardMarkup(
+                        [[InlineKeyboardButton("✅ Check DM", url=f"https://t.me/{client.me.username}")]]
+                    )
+                )
 
+                await asyncio.sleep(300)
+                await msg.delete()
             except Exception as e:
-                logger.exception(e)
+                print(f"[DM ERROR]: {e}")
+        else:
+            await pending_filters.update_one(
+                {"user_id": user_id},
+                {"$set": {"filter": matched_keyword, "group_id": group_id}},
+                upsert=True
+            )
+            await message.reply(
+                "❗ You haven't started the bot yet! Please start it to get your filter.",
+                reply_markup=InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("🚀 Start Bot", url=f"https://t.me/{client.me.username}")]]
+                )
+            )
         return True
 
     else:
         from database.missing import add_missing_filter
         await add_missing_filter(group_id, name)
-        # ❌ No match found — send default reply
         msg = await message.reply_text(
             "<b>This movie clips is not available now 🥲. We will update soon 🙃🤝</b>",
             quote=True
@@ -2962,6 +2967,10 @@ async def manual_filters(client, message, text=False):
         except:
             pass
         return False
+
+
+
+
 
 
 
