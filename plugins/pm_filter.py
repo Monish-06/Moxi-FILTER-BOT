@@ -2902,7 +2902,10 @@ async def manual_filters(client, message, text=False):
         if reply_text:
             reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
-        user_id = message.from_user.id
+        if not message.from_user:
+            return  # or handle it as you want (skip, log, etc.)
+
+            user_id = message.from_user.id
 
         try:
             await client.send_chat_action(user_id, "typing")
