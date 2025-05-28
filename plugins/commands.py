@@ -640,6 +640,52 @@ async def start(client, message):
     await asyncio.sleep(600)
     await msg.delete()
     await k.edit_text("<b>✅ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ ɪs sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴀɢᴀɪɴ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴ</b>",reply_markup=InlineKeyboardMarkup(btn))
+
+    
+
+
+from pymongo import MongoClient
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    import asyncio
+
+    mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
+    db = mongo.monish280720  # 👈 Replace this with your DB name
+    pending_filters = db.pending_filters
+
+    user_id = message.from_user.id
+    pending = await pending_filters.find_one({"user_id": user_id})
+
+    if pending:
+        group_id = pending.get("group_id")
+        keyword = pending.get("filter")
+
+        if group_id and keyword:
+            try:
+                reply_text, btn, alert, fileid = await find_filter(group_id, keyword)
+                button = eval(btn) if btn != "[]" else None
+
+                if fileid == "None":
+                    msg = await message.reply_text(
+                        reply_text,
+                        reply_markup=InlineKeyboardMarkup(button) if button else None,
+                        disable_web_page_preview=True
+                    )
+                else:
+                    msg = await client.send_cached_media(
+                        chat_id=user_id,
+                        file_id=fileid,
+                        caption=reply_text or "",
+                        reply_markup=InlineKeyboardMarkup(button) if button else None
+                    )
+
+                await asyncio.sleep(300)
+                await msg.delete()
+
+            except Exception as e:
+                print(f"[Pending Filter ERROR]: {e}")
+
+        await pending_filters.delete_one({"user_id": user_id})
+    
     return   
 
 @Client.on_message(filters.command('channel') & filters.user(ADMINS))
