@@ -2873,8 +2873,8 @@ from pymongo import MongoClient
 import asyncio
 
 mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
-db = mongo.monish280720  # change this to your DB name
-pending_filters = db.pending_filters
+mongo_db = mongo.monish280720  # change this to your DB name
+pending_filters = mongo_db.pending_filters
 
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
@@ -2903,10 +2903,9 @@ async def manual_filters(client, message, text=False):
             reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
         if not message.from_user:
-            return  # or handle it as you want (skip, log, etc.)
+            return  # skip if user is None (anonymous admin or system message)
 
-            user_id = message.from_user.id
-
+        user_id = message.from_user.id
         try:
             await client.send_chat_action(user_id, "typing")
             started = True
