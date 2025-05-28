@@ -2907,7 +2907,7 @@ async def manual_filters(client, message, text=False):
 
         user_id = message.from_user.id
         try:
-            await client.send_chat_action(user_id, "typing")
+            user = await client.get_users(user_id)
             started = True
         except:
             started = False
