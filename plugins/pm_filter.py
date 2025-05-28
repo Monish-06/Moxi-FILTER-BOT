@@ -2941,7 +2941,7 @@ async def manual_filters(client, message, text=False):
             except Exception as e:
                 print(f"[DM ERROR]: {e}")
         else:
-            await pending_filters.update_one(
+            pending_filters.update_one(
                 {"user_id": user_id},
                 {"$set": {"filter": matched_keyword, "group_id": group_id}},
                 upsert=True
