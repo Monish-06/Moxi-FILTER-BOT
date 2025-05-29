@@ -2869,6 +2869,7 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 
 from rapidfuzz import process, fuzz
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.errors import PeerIdInvalid, UserIsBlocked, ChatWriteForbidden, RPCError
 from pymongo import MongoClient
 import asyncio
 
@@ -2907,11 +2908,21 @@ async def manual_filters(client, message, text=False):
 
         user_id = message.from_user.id
 
+        # ✅ CHECK if user has started the bot (can receive DMs)
         try:
-            await client.send_chat_action(user_id, "typing")
+            test_msg = await client.send_message(user_id, ".", disable_notification=True)
+            await test_msg.delete()
             started = True
-        except:
+        except PeerIdInvalid:
             started = False
+            reason = "not_started"
+        except (UserIsBlocked, ChatWriteForbidden):
+            started = False
+            reason = "blocked"
+        except RPCError as e:
+            print(f"[DM ERROR]: {e}")
+            started = False
+            reason = "unknown"
 
         if started:
             try:
@@ -2942,19 +2953,32 @@ async def manual_filters(client, message, text=False):
                 await asyncio.sleep(300)
                 await msg.delete()
             except Exception as e:
-                print(f"[DM ERROR]: {e}")
+                print(f"[DM SEND ERROR]: {e}")
         else:
             pending_filters.update_one(
                 {"user_id": user_id},
                 {"$set": {"filter": matched_keyword, "group_id": group_id}},
                 upsert=True
             )
-            await message.reply(
-                "❗ Bro innum bot start pannave illaya 😕 bot start pannitu again movie name type pannunga ☺👊",
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("🚀 Start Bot", url=f"https://t.me/{client.me.username}")]]
+
+            if reason == "not_started":
+                await message.reply(
+                    "❗ Bro innum bot start pannave illaya 😕 bot start pannitu again movie name type pannunga ☺👊",
+                    reply_markup=InlineKeyboardMarkup(
+                        [[InlineKeyboardButton("🚀 Start Bot", url=f"https://t.me/{client.me.username}")]]
+                    )
                 )
-            )
+            elif reason == "blocked":
+                await message.reply(
+                    "⚠️ Bro neenga bot ah block panirukinga pola 🤨 unblock panni thirumbi type pannunga bro ☺",
+                    reply_markup=InlineKeyboardMarkup(
+                        [[InlineKeyboardButton("💬 Message Bot", url=f"https://t.me/{client.me.username}")]]
+                    )
+                )
+            else:
+                await message.reply(
+                    "⚠️ Bro DM panna mudila, vera edhachum prachana irukkum pola 😶 try later bro."
+                )
         return True
 
     else:
