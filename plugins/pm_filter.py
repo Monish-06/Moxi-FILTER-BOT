@@ -2950,7 +2950,7 @@ async def manual_filters(client, message, text=False):
                 upsert=True
             )
             await message.reply(
-                "❗ Bro innum bot start pannave illaya 😕 bot start kudunga, link anupuren ☺👊",
+                "❗ Bro innum bot start pannave illaya 😕 bot start pannitu again movie name type pannunga ☺👊",
                 reply_markup=InlineKeyboardMarkup(
                     [[InlineKeyboardButton("🚀 Start Bot", url=f"https://t.me/{client.me.username}")]]
                 )
