@@ -2932,7 +2932,7 @@ async def manual_filters(client, message, text=False):
                     )
 
                 await message.reply(
-                    "📩 I've sent you the filter privately.",
+                    "📩 Dm la link anupirukken bro 😽",
                     reply_markup=InlineKeyboardMarkup(
                         [[InlineKeyboardButton("✅ Check DM", url=f"https://t.me/{client.me.username}")]]
                     )
@@ -2949,7 +2949,7 @@ async def manual_filters(client, message, text=False):
                 upsert=True
             )
             await message.reply(
-                "❗ You haven't started the bot yet! Please start it to get your filter.",
+                "❗ bro innum bot start pannave illaya 😕 bot start kudunga, link anupuren ☺👊",
                 reply_markup=InlineKeyboardMarkup(
                     [[InlineKeyboardButton("🚀 Start Bot", url=f"https://t.me/{client.me.username}")]]
                 )
