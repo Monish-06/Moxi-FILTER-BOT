@@ -2872,8 +2872,8 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from pymongo import MongoClient
 import asyncio
 
-mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # change if needed
-mongo_db = mongo.monish280720  # change this to your DB name
+mongo = MongoClient("mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+mongo_db = mongo.monish280720
 pending_filters = mongo_db.pending_filters
 
 async def manual_filters(client, message, text=False):
@@ -2903,11 +2903,12 @@ async def manual_filters(client, message, text=False):
             reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
         if not message.from_user:
-            return  # skip if user is None (anonymous admin or system message)
+            return  # Anonymous admin — can't identify them
 
         user_id = message.from_user.id
+
         try:
-            user = await client.get_users(user_id)
+            await client.send_chat_action(user_id, "typing")
             started = True
         except:
             started = False
@@ -2932,7 +2933,7 @@ async def manual_filters(client, message, text=False):
                     )
 
                 await message.reply(
-                    "📩 Dm la link anupirukken bro 😽",
+                    "📩 DM la link anupirukken bro 😽",
                     reply_markup=InlineKeyboardMarkup(
                         [[InlineKeyboardButton("✅ Check DM", url=f"https://t.me/{client.me.username}")]]
                     )
@@ -2949,7 +2950,7 @@ async def manual_filters(client, message, text=False):
                 upsert=True
             )
             await message.reply(
-                "❗ bro innum bot start pannave illaya 😕 bot start kudunga, link anupuren ☺👊",
+                "❗ Bro innum bot start pannave illaya 😕 bot start kudunga, link anupuren ☺👊",
                 reply_markup=InlineKeyboardMarkup(
                     [[InlineKeyboardButton("🚀 Start Bot", url=f"https://t.me/{client.me.username}")]]
                 )
