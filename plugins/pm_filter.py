@@ -2953,7 +2953,7 @@ async def manual_filters(client, message, text=False):
         await add_missing_filter(group_id, name)
         # ❌ No match found — send default reply
         msg = await message.reply_text(
-            "<b>This movie clips is not available now 🥲. We will update soon 🙃🤝</b>",
+            "<b>🥲 No matching filter found</b>",
             quote=True
         )
         await asyncio.sleep(30)
