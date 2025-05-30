@@ -9,7 +9,8 @@ import requests
 def keep_alive():
     urls = [
         "https://exotic-darb-monish2807-df2d5a43.koyeb.app/",
-        "https://scornful-andreana-moxi35-c66f799a.koyeb.app/"  # Replace with your second bot's URL
+        "https://scornful-andreana-moxi35-c66f799a.koyeb.app/",
+        "https://vj-177c.onrender.com/"# Replace with your second bot's URL
     ]
     
     while True:
