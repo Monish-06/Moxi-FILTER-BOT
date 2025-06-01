@@ -337,10 +337,10 @@ async def start(client, message):
                 filesarr.append(msg)
             except:
                 continue
-            await asyncio.sleep(1) 
+            await asyncio.sleep(2) 
         await sts.delete()
         k = await client.send_message(chat_id = message.from_user.id, text=f"<ʙʟᴏᴄᴋǫᴜᴏᴛᴇ><ʙ><ᴜ>❗️❗️❗️ɪᴍᴘᴏʀᴛᴀɴᴛ❗️️❗️❗️</ᴜ></ʙ>\ɴ\ɴᴛʜᴇsᴇ ᴄʟɪᴘs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ɪɴ <ʙ><ᴜ>𝟷 ʜᴏᴜʀ</ᴜ> 🫥 <ɪ></ʙ>(ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪssᴜᴇs)</ɪ>.\ɴ\ɴ<ʙ><ɪ>ᴘʟᴇᴀsᴇ ᴅᴏᴡɴʟᴏᴀᴅ ɪᴛ ʙᴇғᴏʀᴇ ɪᴛ ɢᴇᴛs ᴅᴇʟᴇᴛᴇᴅ 🤕</ɪ></ʙ></ʙʟᴏᴄᴋǫᴜᴏᴛᴇ>")
-        await asyncio.sleep(3600)
+        await asyncio.sleep(3)
         for x in filesarr:
             await x.delete()
         await k.edit_text("<b>✅ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ ɪs sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ</b>")  
@@ -405,10 +405,10 @@ async def start(client, message):
                 except:
                     continue
             filesarr.append(p)
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
         await sts.delete()
         k = await client.send_message(chat_id = message.from_user.id, text=f"<blockquote><b><u>❗️❗️❗️IMPORTANT❗️️❗️❗️</u></b>\n\nᴛʜᴇsᴇ ᴄʟɪᴘs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ɪɴ <b><u>1 hour</u> 🫥 <i></b>(ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪssᴜᴇs)</i>.\n\n<b><i>ᴘʟᴇᴀsᴇ ᴅᴏᴡɴʟᴏᴀᴅ ɪᴛ ʙᴇғᴏʀᴇ ɪᴛ ɢᴇᴛs ᴅᴇʟᴇᴛᴇᴅ 🤕</i></b></blockquote>")
-        await asyncio.sleep(3600)
+        await asyncio.sleep(3)
         for x in filesarr:
             await x.delete()
         await k.edit_text("<b>✅ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ ɪs sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ</b>")
