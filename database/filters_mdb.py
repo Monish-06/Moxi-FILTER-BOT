@@ -32,24 +32,38 @@ async def add_filter(grp_id, text, reply_text, btn, file, alert):
         logger.exception('Some error occured!', exc_info=True)
              
      
+
+
+import base64
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 async def find_filter(group_id, name):
     mycol = mydb[str(group_id)]
-    
-    query = mycol.find( {"text":name})
-    # query = mycol.find( { "$text": {"$search": name}})
+    query = mycol.find({"text": name})
+
     try:
         for file in query:
-            reply_text = file['reply']
-            btn = file['btn']
-            fileid = file['file']
-            try:
-                alert = file['alert']
-            except:
-                alert = None
-        return reply_text, btn, alert, fileid
-    except:
-        return None, None, None, None
+            reply_text = file.get('reply', "")
+            btn = file.get('btn', "[]")
+            fileid = file.get('file', None)
+            alert = file.get('alert', None)
 
+            # ====== MINI APP BUTTON LOGIC ======
+            clip_link = file.get('clip_link')
+            if clip_link:
+                # Encode clip_link in base64
+                b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
+                # Create Mini App button (replace YOUR_MINIAPP_URL with your actual mini app URL)
+                miniapp_url = f"https://your-miniapp-domain.com/?link={b64_link}"
+                btn = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
+
+            return reply_text, btn, alert, fileid
+
+        return None, None, None, None
+    except Exception as e:
+        print("Error in find_filter:", e)
+        return None, None, None, None
+        
 
 async def get_filters(group_id):
     mycol = mydb[str(group_id)]
@@ -117,3 +131,4 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
