@@ -6,6 +6,7 @@ import pymongo
 from info import OTHER_DB_URI, DATABASE_NAME
 from pyrogram import enums
 import logging
+from pyrogram.types import webAppInfo
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
@@ -57,7 +58,7 @@ async def find_filter(group_id, name):
                 reversed_b64 = b64_link[::-1]
                 # Create Mini App button
                 miniapp_url = f"https://moxiclips.blogspot.com/p/1.html?link={reversed_b64}"
-                btn = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
+                btn = [[InlineKeyboardButton("🎬 Get Clip",web_app=webAppInfo( url=miniapp_url))]]
 
             return reply_text, btn, alert, fileid
 
@@ -133,6 +134,7 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
 
