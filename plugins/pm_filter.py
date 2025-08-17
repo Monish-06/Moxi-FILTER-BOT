@@ -2868,6 +2868,9 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 
 
 
+
+
+
 import asyncio
 import ast
 from rapidfuzz import process, fuzz
@@ -2895,7 +2898,7 @@ async def manual_filters(client, message, text=False):
     except:
         pass
 
-    if best_match and score > 90:  # adjust score threshold if needed
+    if best_match and score > 90:
         matched_keyword = keyword_map[best_match]
         reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
@@ -2919,7 +2922,6 @@ async def manual_filters(client, message, text=False):
                         new_row = []
                         for btn_item in row:
                             try:
-                                # Expect ["Button Text", "url_or_callback_data"]
                                 if isinstance(btn_item, list) and len(btn_item) == 2:
                                     text, data = btn_item
                                     if str(data).startswith("http"):
@@ -2932,29 +2934,15 @@ async def manual_filters(client, message, text=False):
                             keyboard.append(new_row)
                     return keyboard
 
+                keyboard = parse_btn(btn)
+                reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+
                 if fileid == "None":
-                    if btn == "[]":
-                        joelkb = await client.send_message(
-                            group_id,
-                            reply_text,
-                            disable_web_page_preview=True,
-                            protect_content=True if settings.get("file_secure") else False,
-                            reply_to_message_id=reply_id
-                        )
-                    else:
-                        joelkb = await client.send_message(
-                            group_id,
-                            reply_text,
-                            disable_web_page_preview=True,
-                            reply_markup=InlineKeyboardMarkup(parse_btn(btn)),
-                            protect_content=True if settings.get("file_secure") else False,
-                            reply_to_message_id=reply_id
-                        )
-                elif btn == "[]":
-                    joelkb = await client.send_cached_media(
+                    joelkb = await client.send_message(
                         group_id,
-                        fileid,
-                        caption=reply_text or "",
+                        reply_text,
+                        disable_web_page_preview=True,
+                        reply_markup=reply_markup,
                         protect_content=True if settings.get("file_secure") else False,
                         reply_to_message_id=reply_id
                     )
@@ -2962,8 +2950,9 @@ async def manual_filters(client, message, text=False):
                     joelkb = await message.reply_cached_media(
                         fileid,
                         caption=reply_text or "",
-                        reply_markup=InlineKeyboardMarkup(parse_btn(btn)),
-                        reply_to_message_id=reply_id
+                        reply_markup=reply_markup,
+                        reply_to_message_id=reply_id,
+                        protect_content=True if settings.get("file_secure") else False
                     )
 
                 # Auto filter and delete logic
@@ -2987,7 +2976,6 @@ async def manual_filters(client, message, text=False):
     else:
         from database.missing import add_missing_filter
         await add_missing_filter(group_id, name)
-        # ❌ No match found — send default reply
         msg = await message.reply_text(
             "<b>🥲 No matching filter found</b>",
             quote=True
@@ -3256,6 +3244,7 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
+
 
 
 
