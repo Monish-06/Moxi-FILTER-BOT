@@ -48,13 +48,15 @@ async def find_filter(group_id, name):
             fileid = file.get('file', None)
             alert = file.get('alert', None)
 
-            # ====== MINI APP BUTTON LOGIC ======
+            # ====== DOUBLE SECURE MINI APP BUTTON ======
             clip_link = file.get('clip_link')
             if clip_link:
-                # Encode clip_link in base64
+                # Step 1: Base64 encode
                 b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
-                # Create Mini App button (replace YOUR_MINIAPP_URL with your actual mini app URL)
-                miniapp_url = f"https://your-miniapp-domain.com/?link={b64_link}"
+                # Step 2: Reverse the base64 string
+                reversed_b64 = b64_link[::-1]
+                # Create Mini App button
+                miniapp_url = f"https://your-miniapp-domain.com/?link={reversed_b64}"
                 btn = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
 
             return reply_text, btn, alert, fileid
@@ -131,4 +133,5 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
