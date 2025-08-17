@@ -2865,59 +2865,108 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 
 
 
-import base64
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from database.filters import get_filters, get_clip_link  # your existing helpers
 
-async def send_miniapp_link(client, message):
-    """Fetch clip_link for the requested movie and send Mini App button"""
+
+
+from rapidfuzz import process, fuzz  # Make sure this is imported
+
+async def manual_filters(client, message, text=False):
+    settings = await get_settings(message.chat.id)
     group_id = message.chat.id
-    text = message.text.strip()
+    name = text or message.text
     reply_id = message.reply_to_message.id if message.reply_to_message else message.id
-
-    # Fetch all keywords for this group
     keywords = await get_filters(group_id)
+
     if not keywords:
-        await message.reply_text("No filters available for this group.")
-        return
+        return False
 
-    # Fuzzy match user text
-    from rapidfuzz import process, fuzz
+    # Use fuzzy matching to find best keyword
     keyword_map = {k.lower(): k for k in keywords}
-    best_match, score, _ = process.extractOne(text.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
+    best_match = None
+    score = 0
 
-    if best_match and score > 90:  # adjust threshold if needed
+    try:
+        best_match, score, _ = process.extractOne(name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
+    except:
+        pass
+
+    if best_match and score > 90:  # adjust score as needed
         matched_keyword = keyword_map[best_match]
+        reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
-        # Fetch clip_link from MongoDB
-        clip_link = await get_clip_link(group_id, matched_keyword)  # returns string
-        if not clip_link:
-            await message.reply_text("Clip link not found for this movie.")
-            return
+        if reply_text:
+            reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
-        # Encode link in base64
-        b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
-        mini_app_url = f"https://yourblog.blogspot.com/p/miniapp.html?clip={b64_link}"
+        if btn is not None:
+            try:
+                if fileid == "None":
+                    if btn == "[]":
+                        joelkb = await client.send_message(
+                            group_id,
+                            reply_text,
+                            disable_web_page_preview=True,
+                            protect_content=True if settings["file_secure"] else False,
+                            reply_to_message_id=reply_id
+                        )
+                    else:
+                        button = eval(btn)
+                        joelkb = await client.send_message(
+                            group_id,
+                            reply_text,
+                            disable_web_page_preview=True,
+                            reply_markup=InlineKeyboardMarkup(button),
+                            protect_content=True if settings["file_secure"] else False,
+                            reply_to_message_id=reply_id
+                        )
+                elif btn == "[]":
+                    joelkb = await client.send_cached_media(
+                        group_id,
+                        fileid,
+                        caption=reply_text or "",
+                        protect_content=True if settings["file_secure"] else False,
+                        reply_to_message_id=reply_id
+                    )
+                else:
+                    button = eval(btn)
+                    joelkb = await message.reply_cached_media(
+                        fileid,
+                        caption=reply_text or "",
+                        reply_markup=InlineKeyboardMarkup(button),
+                        reply_to_message_id=reply_id
+                    )
 
-        # Prepare button
-        button = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("🎬 Watch Clip", url=mini_app_url)]]
-        )
+                # Auto filter and delete logic (unchanged)
+                if settings.get('auto_ffilter'):
+                    ai_search = True
+                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
+                    await auto_filter(client, message.text, message, reply_msg, ai_search)
+                    if settings.get('auto_delete'):
+                        await joelkb.delete()
+                else:
+                    if settings.get('auto_delete'):
+                        await asyncio.sleep(600)
+                        await joelkb.delete()
 
-        # Send message with button
-        await client.send_message(
-            chat_id=group_id,
-            text=f"Here's your clip for <b>{matched_keyword}</b> 👇",
-            reply_markup=button,
-            disable_web_page_preview=True,
-            reply_to_message_id=reply_id
-        )
+            except Exception as e:
+                logger.exception(e)
+        return True
 
     else:
-        # If no match, optionally log it
         from database.missing import add_missing_filter
-        await add_missing_filter(group_id, text)
-        await message.reply_text("❌ No matching movie found.", reply_to_message_id=reply_id)
+        await add_missing_filter(group_id, name)
+        # ❌ No match found — send default reply
+        msg = await message.reply_text(
+            "<b>🥲 No matching filter found</b>",
+            quote=True
+        )
+        await asyncio.sleep(30)
+        try:
+            await msg.delete()
+        except:
+            pass
+        return False
+
+
 
 
 
@@ -3171,4 +3220,5 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
+
 
