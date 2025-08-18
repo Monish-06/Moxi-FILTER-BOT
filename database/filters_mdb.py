@@ -34,7 +34,7 @@ async def add_filter(grp_id, text, reply_text, btn, file, alert):
      
 
 import base64
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 async def find_filter(group_id, name):
     mycol = mydb[str(group_id)]
@@ -54,25 +54,17 @@ async def find_filter(group_id, name):
                 b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
                 # Step 2: Reverse the base64 string
                 reversed_b64 = b64_link[::-1]
-                # Step 3: Build mini-app url
-                miniapp_url = f"https://your-domain.com/p/1_17.html?link={reversed_b64}"
-
-                # ✅ Correct way: pass WebAppInfo as keyword
-                btn = [[
-                    InlineKeyboardButton(
-                        "🎬 Get Clip",
-                        web_app=WebAppInfo(url=miniapp_url)
-                    )
-                ]]
+                # Create Mini App button
+                miniapp_url = f"https://www.moxibeatz.fun/p/1_17.html/?link={reversed_b64}"
+                btn = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
 
             return reply_text, btn, alert, fileid
 
         return None, None, None, None
-
     except Exception as e:
         print("Error in find_filter:", e)
         return None, None, None, None
-
+        
 
 
 
@@ -143,6 +135,7 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
 
