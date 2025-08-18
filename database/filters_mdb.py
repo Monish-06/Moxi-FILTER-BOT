@@ -33,9 +33,8 @@ async def add_filter(grp_id, text, reply_text, btn, file, alert):
              
      
 
-
 import base64
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 async def find_filter(group_id, name):
     mycol = mydb[str(group_id)]
@@ -55,9 +54,11 @@ async def find_filter(group_id, name):
                 b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
                 # Step 2: Reverse the base64 string
                 reversed_b64 = b64_link[::-1]
-                # Create Mini App button
+                # Step 3: Final Mini App URL
                 miniapp_url = f"https://www.moxibeatz.fun/p/1_17.html/?link={reversed_b64}"
-                btn = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
+
+                # ✅ Telegram Mini App button (instead of url=)
+                btn = [[InlineKeyboardButton("🎬 Get Clip", web_app=WebAppInfo(miniapp_url))]]
 
             return reply_text, btn, alert, fileid
 
@@ -133,5 +134,6 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
