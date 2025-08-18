@@ -2874,7 +2874,7 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 import asyncio
 import ast
 from rapidfuzz import process, fuzz
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import InlineKeyboardMarkup
 
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
@@ -2898,7 +2898,7 @@ async def manual_filters(client, message, text=False):
     except:
         pass
 
-    if best_match and score > 90:
+    if best_match and score > 90:  # adjust score as needed
         matched_keyword = keyword_map[best_match]
         reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
@@ -2907,55 +2907,52 @@ async def manual_filters(client, message, text=False):
 
         if btn is not None:
             try:
-                # Safe button parser
+                # Parse buttons safely
                 def parse_btn(b):
                     if isinstance(b, str):
                         try:
-                            b = ast.literal_eval(b)
+                            return ast.literal_eval(b)
                         except Exception:
                             return []
-                    if not b:
-                        return []
-
-                    keyboard = []
-                    for row in b:
-                        new_row = []
-                        for btn_item in row:
-                            try:
-                                if isinstance(btn_item, list) and len(btn_item) == 2:
-                                    text, data = btn_item
-                                    if str(data).startswith("http"):
-                                        new_row.append(InlineKeyboardButton(text, url=data))
-                                    else:
-                                        new_row.append(InlineKeyboardButton(text, callback_data=data))
-                            except Exception:
-                                continue
-                        if new_row:
-                            keyboard.append(new_row)
-                    return keyboard
-
-                keyboard = parse_btn(btn)
-                reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+                    return b or []
 
                 if fileid == "None":
-                    joelkb = await client.send_message(
+                    if btn == "[]":
+                        joelkb = await client.send_message(
+                            group_id,
+                            reply_text,
+                            disable_web_page_preview=True,
+                            protect_content=True if settings["file_secure"] else False,
+                            reply_to_message_id=reply_id
+                        )
+                    else:
+                        button = parse_btn(btn)
+                        joelkb = await client.send_message(
+                            group_id,
+                            reply_text,
+                            disable_web_page_preview=True,
+                            reply_markup=InlineKeyboardMarkup(button),
+                            protect_content=True if settings["file_secure"] else False,
+                            reply_to_message_id=reply_id
+                        )
+                elif btn == "[]":
+                    joelkb = await client.send_cached_media(
                         group_id,
-                        reply_text,
-                        disable_web_page_preview=True,
-                        reply_markup=reply_markup,
-                        protect_content=True if settings.get("file_secure") else False,
+                        fileid,
+                        caption=reply_text or "",
+                        protect_content=True if settings["file_secure"] else False,
                         reply_to_message_id=reply_id
                     )
                 else:
+                    button = parse_btn(btn)
                     joelkb = await message.reply_cached_media(
                         fileid,
                         caption=reply_text or "",
-                        reply_markup=reply_markup,
-                        reply_to_message_id=reply_id,
-                        protect_content=True if settings.get("file_secure") else False
+                        reply_markup=InlineKeyboardMarkup(button),
+                        reply_to_message_id=reply_id
                     )
 
-                # Auto filter and delete logic
+                # Auto filter and delete logic (unchanged)
                 if settings.get('auto_ffilter'):
                     ai_search = True
                     reply_msg = await message.reply_text(
@@ -2976,6 +2973,7 @@ async def manual_filters(client, message, text=False):
     else:
         from database.missing import add_missing_filter
         await add_missing_filter(group_id, name)
+        # ❌ No match found — send default reply
         msg = await message.reply_text(
             "<b>🥲 No matching filter found</b>",
             quote=True
@@ -3244,6 +3242,7 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
+
 
 
 
