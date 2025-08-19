@@ -52,10 +52,8 @@ async def find_filter(group_id, name):
             if clip_link:
                 # Step 1: Base64 encode
                 b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
-                # Step 2: Reverse the base64 string
-                reversed_b64 = b64_link[::-1]
                 # Create Mini App button
-                miniapp_url = f"https://www.moxibeatz.fun/p/1_17.html?link={reversed_b64}"
+                miniapp_url = f"https://www.moxibeatz.fun/p/12.html?link={b64_link}"
                 btn = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
 
             return reply_text, btn, alert, fileid
@@ -135,6 +133,7 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
 
