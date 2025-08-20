@@ -34,7 +34,6 @@ async def add_filter(grp_id, text, reply_text, btn, file, alert):
      
 
 import base64
-import json
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 async def find_filter(group_id, name):
@@ -43,52 +42,33 @@ async def find_filter(group_id, name):
 
     try:
         for file in query:
-            reply_text = file.get("reply", "")
-            fileid = file.get("file", None)
-            alert = file.get("alert", None)
-
-            buttons = []  # always start fresh
+            reply_text = file.get('reply', "")
+            btn = file.get('btn', "[]")
+            fileid = file.get('file', None)
+            alert = file.get('alert', None)
 
             # ====== DOUBLE SECURE MINI APP BUTTON ======
-            clip_link = file.get("clip_link")
+            clip_link = file.get('clip_link')
             if clip_link:
                 # Step 1: Base64 encode
                 b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
                 # Create Mini App button
                 miniapp_url = f"https://www.moxibeatz.fun/p/12.html?link={b64_link}"
 
-                # Add buttons
+                # Add second button below the first
                 download_url = "https://t.me/c/2465511216/2"
-                buttons = [
+                btn = [
                     [InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)],   # First row
-                    [InlineKeyboardButton("⬇️ How To Download", url=download_url)]    # Second row
                 ]
-            else:
-                # if DB has button JSON, parse it safely
-                btn_data = file.get("btn", "[]")
-                try:
-                    raw_btns = json.loads(btn_data) if isinstance(btn_data, str) else btn_data
-                except Exception:
-                    raw_btns = []
 
-                for row in raw_btns:
-                    row_buttons = []
-                    for b in row:
-                        if "text" in b and "url" in b:
-                            row_buttons.append(InlineKeyboardButton(b["text"], url=b["url"]))
-                    if row_buttons:
-                        buttons.append(row_buttons)
-
-            # ✅ Final reply markup (only if buttons exist)
-            reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
-
-            return reply_text, reply_markup, alert, fileid
+            return reply_text, btn, alert, fileid
 
         return None, None, None, None
 
     except Exception as e:
         print("Error in find_filter:", e)
         return None, None, None, None
+
 
         
 
@@ -161,6 +141,7 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
 
