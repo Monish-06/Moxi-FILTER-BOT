@@ -10,7 +10,7 @@ def keep_alive():
     urls = [
         "https://exotic-darb-monish2807-df2d5a43.koyeb.app/",
         "https://scornful-andreana-moxi35-c66f799a.koyeb.app/",
-        "https://deliberate-andreana/pandi-filter-bot"# Replace with your second bot's URL
+        "https://deliberate-andreana-moxibeatz21-f93c3f9d.koyeb.app/"# Replace with your second bot's URL
     ]
     
     while True:
@@ -117,5 +117,6 @@ if __name__ == '__main__':
         loop.run_until_complete(start())
     except KeyboardInterrupt:
         logging.info('Service Stopped Bye 👋')
+
 
 
