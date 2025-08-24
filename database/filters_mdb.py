@@ -34,53 +34,22 @@ async def add_filter(grp_id, text, reply_text, btn, file, alert):
      
 
 
-import base64
-import json
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 async def find_filter(group_id, name):
     mycol = mydb[str(group_id)]
-    query = mycol.find({"text": name})
-
+    
+    query = mycol.find( {"text":name})
+    # query = mycol.find( { "$text": {"$search": name}})
     try:
         for file in query:
-            reply_text = file.get('reply', "")
-            btn_data = file.get('btn', "[]")   # stored as string in Mongo
-            fileid = file.get('file', None)
-            alert = file.get('alert', None)
-
-            # If clip link exists → override button
-            clip_link = file.get('clip_link')
-            if clip_link:
-                b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
-                miniapp_url = f"https://www.moxibeatz.fun/p/12.html?link={b64_link}"
-                buttons = [[InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)]]
-            else:
-                # Safely parse JSON string from DB
-                try:
-                    raw_btns = json.loads(btn_data) if isinstance(btn_data, str) else btn_data
-                except Exception:
-                    raw_btns = []
-
-                # Convert to InlineKeyboardButton objects
-                buttons = []
-                for row in raw_btns:
-                    row_buttons = []
-                    for b in row:
-                        text = b.get("text")
-                        url = b.get("url")
-                        if text and url:
-                            row_buttons.append(InlineKeyboardButton(text, url=url))
-                    if row_buttons:
-                        buttons.append(row_buttons)
-
-            # Final cleanup → if no valid buttons, return None
-            reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
-            return reply_text, reply_markup, alert, fileid
-
-        return None, None, None, None
-    except Exception as e:
-        print("Error in find_filter:", e)
+            reply_text = file['reply']
+            btn = file['btn']
+            fileid = file['file']
+            try:
+                alert = file['alert']
+            except:
+                alert = None
+        return reply_text, btn, alert, fileid
+    except:
         return None, None, None, None
 
         
@@ -154,6 +123,7 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
 
