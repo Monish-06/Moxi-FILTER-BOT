@@ -33,42 +33,23 @@ async def add_filter(grp_id, text, reply_text, btn, file, alert):
              
      
 
-import base64
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 async def find_filter(group_id, name):
     mycol = mydb[str(group_id)]
-    query = mycol.find({"text": name})
-
+    
+    query = mycol.find( {"text":name})
+    # query = mycol.find( { "$text": {"$search": name}})
     try:
         for file in query:
-            reply_text = file.get('reply', "")
-            btn = file.get('btn', "[]")
-            fileid = file.get('file', None)
-            alert = file.get('alert', None)
-
-            # ====== DOUBLE SECURE MINI APP BUTTON ======
-            clip_link = file.get('clip_link')
-            if clip_link:
-                # Step 1: Base64 encode
-                b64_link = base64.urlsafe_b64encode(clip_link.encode()).decode()
-                # Create Mini App button
-                miniapp_url = f"https://www.moxibeatz.fun/p/12.html?link={b64_link}"
-
-                # Add second button below the first
-                download_url = "https://t.me/c/2465511216/2"
-                btn = [
-                    [InlineKeyboardButton("🎬 Get Clip", url=miniapp_url)],   # First row
-                ]
-
-            return reply_text, btn, alert, fileid
-
+            reply_text = file['reply']
+            btn = file['btn']
+            fileid = file['file']
+            try:
+                alert = file['alert']
+            except:
+                alert = None
+        return reply_text, btn, alert, fileid
+    except:
         return None, None, None, None
-
-    except Exception as e:
-        print("Error in find_filter:", e)
-        return None, None, None, None
-
 
         
 
@@ -141,6 +122,7 @@ async def filter_stats():
     totalcollections = len(collections)
 
     return totalcollections, totalcount
+
 
 
 
