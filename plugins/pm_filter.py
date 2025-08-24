@@ -2871,10 +2871,8 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 
 
 
-import asyncio
-import ast
-from rapidfuzz import process, fuzz
-from pyrogram.types import InlineKeyboardMarkup
+
+from rapidfuzz import process, fuzz  # Make sure this is imported
 
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
@@ -2892,9 +2890,7 @@ async def manual_filters(client, message, text=False):
     score = 0
 
     try:
-        best_match, score, _ = process.extractOne(
-            name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio
-        )
+        best_match, score, _ = process.extractOne(name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
     except:
         pass
 
@@ -2907,15 +2903,6 @@ async def manual_filters(client, message, text=False):
 
         if btn is not None:
             try:
-                # Parse buttons safely
-                def parse_btn(b):
-                    if isinstance(b, str):
-                        try:
-                            return ast.literal_eval(b)
-                        except Exception:
-                            return []
-                    return b or []
-
                 if fileid == "None":
                     if btn == "[]":
                         joelkb = await client.send_message(
@@ -2926,7 +2913,7 @@ async def manual_filters(client, message, text=False):
                             reply_to_message_id=reply_id
                         )
                     else:
-                        button = parse_btn(btn)
+                        button = eval(btn)
                         joelkb = await client.send_message(
                             group_id,
                             reply_text,
@@ -2944,7 +2931,7 @@ async def manual_filters(client, message, text=False):
                         reply_to_message_id=reply_id
                     )
                 else:
-                    button = parse_btn(btn)
+                    button = eval(btn)
                     joelkb = await message.reply_cached_media(
                         fileid,
                         caption=reply_text or "",
@@ -2955,9 +2942,7 @@ async def manual_filters(client, message, text=False):
                 # Auto filter and delete logic (unchanged)
                 if settings.get('auto_ffilter'):
                     ai_search = True
-                    reply_msg = await message.reply_text(
-                        f"<b><i>Searching For {message.text} 🔍</i></b>"
-                    )
+                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
                     await auto_filter(client, message.text, message, reply_msg, ai_search)
                     if settings.get('auto_delete'):
                         await joelkb.delete()
@@ -2983,7 +2968,7 @@ async def manual_filters(client, message, text=False):
             await msg.delete()
         except:
             pass
-        return False
+        return False                
 
 
 
@@ -3242,6 +3227,7 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
+
 
 
 
