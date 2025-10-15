@@ -42,16 +42,12 @@ SPELL_CHECK = {}
 
 
 # ====================================================================================
-# Force Subscription Helper Functions
+# HELPER FUNCTIONS (ADD THIS BLOCK)
 # ====================================================================================
 
 async def check_all_channels_member(client, user_id):
-    """
-    Checks if a user is a member of ALL channels in FORCE_SUB_CHANNELS.
-    
-    Returns:
-        tuple (is_subscribed: bool, missing_channels: list)
-    """
+    """Checks if a user is a member of ALL channels in FORCE_SUB_CHANNELS."""
+    # If no channels are set in the environment, always return True
     if not FORCE_SUB_CHANNELS:
         return True, [] 
 
@@ -60,7 +56,7 @@ async def check_all_channels_member(client, user_id):
     for channel in FORCE_SUB_CHANNELS:
         try:
             member = await client.get_chat_member(channel, user_id)
-            # Check for active membership status
+            # Checks for member, administrator, or creator status
             if member.status in (enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.CREATOR):
                 continue
             else:
@@ -69,12 +65,13 @@ async def check_all_channels_member(client, user_id):
             missing_channels.append(channel)
         except Exception as e:
             logger.error(f"Error checking membership for channel {channel}: {e}")
+            # If API fails, assume user needs to join
             missing_channels.append(channel) 
 
     return (False, missing_channels) if missing_channels else (True, [])
 
 async def get_force_sub_buttons(client, missing_channels):
-    """Builds InlineKeyboardMarkup for force subscription with a recheck button."""
+    """Builds InlineKeyboardMarkup for force subscription with the recheck button."""
     if not missing_channels:
         return None
         
@@ -83,33 +80,34 @@ async def get_force_sub_buttons(client, missing_channels):
         try:
             chat = await client.get_chat(channel)
             invite_link = chat.invite_link if chat.invite_link else f"https://t.me/{chat.username or channel}"
-            # Use channel title if available
             title = chat.title or "Channel"
             buttons.append([InlineKeyboardButton(f"📢 Join Channel: {title}", url=invite_link)])
         except Exception:
-            # Fallback if chat info fails
             buttons.append([InlineKeyboardButton(f"📢 Join Channel", url=f"https://t.me/{channel}")])
             
-    # Add the re-check button
-    buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="recheck_fsub")])
+    # CRITICAL: This callback data must match the handler below
+    buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="recheck_fsub")]) 
     return InlineKeyboardMarkup(buttons)
 
 
 
 
+
+
+# ====================================================================================
+# give_filter FUNCTION (REPLACE ENTIRELY)
+# ====================================================================================
 @Client.on_message(filters.group & filters.text & filters.incoming)
 async def give_filter(client, message):
     if message.chat.id != SUPPORT_CHAT_ID: 
         user_id = message.from_user.id if message.from_user else 0
         chatid = message.chat.id
 
-        # --- FORCE SUB LOGIC APPLIES TO ALL USERS, INCLUDING ADMINS ---
-        
-        # This function correctly checks all channels based on FORCE_SUB_CHANNELS
+        # --- FORCE SUB LOGIC ---
         is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
         
         if not is_subscribed:
-            # User must subscribe first.
+            # If the user is missing channels, we stop and prompt them.
             
             # 1. Store original message details in cache
             temp_cache[user_id] = {
@@ -119,7 +117,6 @@ async def give_filter(client, message):
             }
             
             # 2. Send force sub message with buttons
-            # This helper function creates the correct "recheck_fsub" button
             reply_markup = await get_force_sub_buttons(client, missing_channels)
             
             await message.reply_photo(
@@ -128,9 +125,9 @@ async def give_filter(client, message):
                 reply_markup=reply_markup, 
                 parse_mode=enums.ParseMode.HTML
             )
-            return # Stop processing the message/filter
+            return # Stop processing the filter
         
-        # --- Continue to your original filter logic if subscribed ---
+        # --- EXECUTE FILTER LOGIC IF SUBSCRIBED ---
         manual = await manual_filters(client, message)
         
         if manual == False:
@@ -150,7 +147,6 @@ async def give_filter(client, message):
                     reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
                     await auto_filter(client, message.text, message, reply_msg, ai_search)
     else: 
-        # (Your existing SUPPORT_CHAT_ID logic)
         search = message.text
         temp_files, temp_offset, total_results = await get_search_results(chat_id=message.chat.id, query=search.lower(), offset=0, filter=True)
         if total_results == 0:
@@ -2962,63 +2958,40 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 from rapidfuzz import process, fuzz  # Make sure this is imported
 
 async def manual_filters(client, message, text=False):
-    # OnOnlyun force-sub check if channels are set
-    # Only run force-sub if FORCE_SUB_CHANNELS is set
-    if FORCE_SUB_CHANNELS and message.from_user:
-        user_id = message.from_user.id
-        chat_id = message.chat.id
-        text = message.text
-
-        # Check if user joined all channels
-        subscribed = True
-        for ch in FORCE_SUB_CHANNELS:
-            try:
-                member = await client.get_chat_member(ch, user_id)
-                if member.status not in ("member", "administrator", "creator"):
-                    subscribed = False
-                    break
-            except UserNotParticipant:
-                subscribed = False
-                break
-            except Exception:
-                continue
-
-    if not subscribed:
-        # Save the user’s message temporarily
-        temp_cache[user_id] = {"chat_id": chat_id, "text": text}
-
-        # Build buttons for all channels
-        buttons = []
-        for ch in FORCE_SUB_CHANNELS:
-            buttons.append([InlineKeyboardButton(f"📢 Join {ch}", url=f"https://t.me/{ch[1:]}")])
-        buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="check_subs")])
-
-        await message.reply_text(
-            "⚠️ You must join our channel(s) to use this bot!",
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
-        return  # Stop processing filters until they join
+    """
+    Checks for manual filters (local and global) using fuzzy matching.
+    
+    Returns:
+        True if a filter is found and sent.
+        False if no filter is found.
+    """
+    # NOTE: The force-sub check is now handled entirely by the give_filter function.
+    
     settings = await get_settings(message.chat.id)
     group_id = message.chat.id
-    name = text or message.text
+    # Use the 'text' passed from the re-check callback, otherwise use the message text
+    name = text or message.text 
     reply_id = message.reply_to_message.id if message.reply_to_message else message.id
     keywords = await get_filters(group_id)
 
     if not keywords:
         return False
 
+    # --- FUZZY MATCHING LOGIC ---
     # Use fuzzy matching to find best keyword
     keyword_map = {k.lower(): k for k in keywords}
     best_match = None
     score = 0
 
     try:
+        # Assumes 'process' and 'fuzz' are imported from rapidfuzz
         best_match, score, _ = process.extractOne(name.lower(), keyword_map.keys(), scorer=fuzz.partial_ratio)
     except:
         pass
 
-    if best_match and score > 90:  # adjust score as needed
+    if best_match and score > 90:  # Adjust score as needed
         matched_keyword = keyword_map[best_match]
+        # Assumes find_filter is defined elsewhere
         reply_text, btn, alert, fileid = await find_filter(group_id, matched_keyword)
 
         if reply_text:
@@ -3026,6 +2999,7 @@ async def manual_filters(client, message, text=False):
 
         if btn is not None:
             try:
+                # --- FILTER DELIVERY LOGIC (Mostly preserved) ---
                 if fileid == "None":
                     if btn == "[]":
                         joelkb = await client.send_message(
@@ -3062,25 +3036,31 @@ async def manual_filters(client, message, text=False):
                         reply_to_message_id=reply_id
                     )
 
-                # Auto filter and delete logic (unchanged)
-                if settings.get('auto_ffilter'):
-                    ai_search = True
-                    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
-                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                    if settings.get('auto_delete'):
-                        await joelkb.delete()
-                else:
-                    if settings.get('auto_delete'):
+                # --- CLEANUP LOGIC (Removed duplicate auto_filter call) ---
+                
+                # The check for 'auto_ffilter' is now handled by give_filter, 
+                # but we keep auto_delete logic here.
+                if settings.get('auto_delete'):
+                    if settings.get('auto_ffilter'):
+                         # Delete immediately if both manual filter was sent and auto-filter is on
+                         await joelkb.delete()
+                    else:
+                        # Original user logic: sleep and delete if auto-filter is off
                         await asyncio.sleep(600)
                         await joelkb.delete()
 
             except Exception as e:
                 logger.exception(e)
-        return True
+            
+            # CRITICAL: Return True after successfully handling the filter
+            return True
 
+    # --- NO MATCH FOUND LOGIC ---
     else:
-        from database.missing import add_missing_filter
+        # Assumes add_missing_filter is imported
+        from database.missing import add_missing_filter 
         await add_missing_filter(group_id, name)
+        
         # ❌ No match found — send default reply
         msg = await message.reply_text(
             "<b>🥲 No matching filter found</b>",
@@ -3091,10 +3071,9 @@ async def manual_filters(client, message, text=False):
             await msg.delete()
         except:
             pass
-        return False                
-
-
-
+            
+        # CRITICAL: Return False if no filter was found/sent, allowing auto-filter to run
+        return False
 
 
 
@@ -3357,12 +3336,15 @@ async def global_filters(client, message, text=False):
 
 
 
+# ====================================================================================
+# recheck_force_subscribe FUNCTION (REPLACE ENTIRELY)
+# ====================================================================================
 @Client.on_callback_query(filters.regex(r"^recheck_fsub"))
 async def recheck_force_subscribe(client, query):
     user_id = query.from_user.id
     chat_id = query.message.chat.id
     
-    # 1. Re-check subscription status (using the new multi-channel helper)
+    # 1. Re-check subscription status
     is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
     
     if not is_subscribed:
@@ -3383,10 +3365,11 @@ async def recheck_force_subscribe(client, query):
     
     # 2. Re-run the filter search using cached data
     if user_id in temp_cache:
+        # CRITICAL: Retrieve and REMOVE the stored text
         data = temp_cache.pop(user_id)
         text = data["text"]
         
-        # Create a mock message object to mimic the original incoming message
+        # Create a mock message object
         mock_message = type("MockMessage", (object,), {
             "chat": type("Chat", (object,), {"id": chat_id})(),
             "text": text,
@@ -3395,7 +3378,7 @@ async def recheck_force_subscribe(client, query):
             "id": data["original_message_id"] 
         })
         
-        # Run the manual filter check
+        # Run filter logic
         manual = await manual_filters(client, mock_message)
         
         if manual == False:
@@ -3403,7 +3386,6 @@ async def recheck_force_subscribe(client, query):
             settings = await get_settings(chat_id)
             if settings.get('auto_ffilter'):
                 ai_search = True
-                # Edit the message one last time for search results
                 reply_msg = await query.message.edit_caption(f"<b><i>Searching For {text} 🔍</i></b>", parse_mode=enums.ParseMode.HTML)
                 
                 await auto_filter(client, text, mock_message, reply_msg, ai_search) 
@@ -3411,4 +3393,5 @@ async def recheck_force_subscribe(client, query):
     else:
         # If data is not in cache, prompt the user to re-type
         await query.message.edit_caption("✅ **Subscription confirmed!** Your original request could not be retrieved, please re-type it.")
+
 
