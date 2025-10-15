@@ -18,6 +18,14 @@ from database.connections_mdb import mydb, active_connection, all_connections, d
 from database.gfilters_mdb import find_gfilter, get_gfilters, del_allg
 from urllib.parse import quote_plus
 from TechVJ.util.file_properties import get_name, get_hash, get_media_file_size
+from pyrogram.errors import UserNotParticipant
+
+# 🌐 Load Force Sub Channels from environment variables (optional)
+force_sub_env = os.getenv("FORCE_SUB_CHANNELS", "").strip()
+FORCE_SUB_CHANNELS = [ch.strip() for ch in force_sub_env.split() if ch.strip()]
+
+# 🧠 Temporary cache to store users who need to retry
+temp_cache = {}
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -2875,6 +2883,32 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
 from rapidfuzz import process, fuzz  # Make sure this is imported
 
 async def manual_filters(client, message, text=False):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+    text = message.text
+
+    # Check if user joined the force-sub channel
+    try:
+        member = await bot.get_chat_member(FORCE_SUB_CHANNEL, user_id)
+        if member.status not in ("member", "administrator", "creator"):
+            raise Exception("Not subscribed")
+    except Exception:
+        temp_cache[user_id] = {"chat_id": chat_id, "text": text}
+
+        keyboard = InlineKeyboardMarkup(
+            [[
+                InlineKeyboardButton("📢 Join Channel", url=f"https://t.me/{(await bot.get_chat(FORCE_SUB_CHANNELS)).username}")
+            ],
+            [
+                InlineKeyboardButton("✅ I Joined", callback_data="checksub")
+            ]]
+        )
+
+        await message.reply_text(
+            "<b>⚠️ You must join our main channel!\n join and press '✅ I joined'</b>",
+            reply_markup=keyboard
+        )
+        return
     settings = await get_settings(message.chat.id)
     group_id = message.chat.id
     name = text or message.text
@@ -3234,3 +3268,25 @@ async def global_filters(client, message, text=False):
 
 
 
+@Client.on_callback_query(filters.regex("checksub"))
+async def recheck_subscription(bot, query):
+    user_id = query.from_user.id
+
+    try:
+        member = await bot.get_chat_member(FORCE_SUB_CHANNEL, user_id)
+        if member.status in ("member", "administrator", "creator"):
+            if user_id in temp_cache:
+                data = temp_cache.pop(user_id)
+                chat_id = data["chat_id"]
+                text = data["text"]
+
+                # Rerun the same filter again
+                fake_message = type("FakeMessage", (), {"chat": type("Chat", (), {"id": chat_id})(), "text": text, "from_user": query.from_user})
+                await manual_filters(bot, fake_message)
+                await query.message.edit_text("✅ You’ve joined! Fetching your result...")
+            else:
+                await query.message.edit_text("✅ You’ve joined! Now you can search again.")
+        else:
+            await query.answer("❗ You haven’t joined yet.", show_alert=True)
+    except Exception:
+        await query.answer("❗ You haven’t joined yet.", show_alert=True)
