@@ -2885,23 +2885,23 @@ from rapidfuzz import process, fuzz  # Make sure this is imported
 async def manual_filters(client, message, text=False):
     # OnOnlyun force-sub check if channels are set
     if FORCE_SUB_CHANNELS and message.from_user:
-    user_id = message.from_user.id
-    chat_id = message.chat.id
-    text = message.text
+        user_id = message.from_user.id
+        chat_id = message.chat.id
+        text = message.text
 
-    # Check if user joined all channels
-    subscribed = True
-    for ch in FORCE_SUB_CHANNELS:
-        try:
-            member = await client.get_chat_member(ch, user_id)
-            if member.status not in ("member", "administrator", "creator"):
+        # Check if user joined all channels
+        subscribed = True
+        for ch in FORCE_SUB_CHANNELS:
+            try:
+                member = await client.get_chat_member(ch, user_id)
+                if member.status not in ("member", "administrator", "creator"):
+                    subscribed = False
+                    break
+            except UserNotParticipant:
                 subscribed = False
                 break
-        except UserNotParticipant:
-            subscribed = False
-            break
-        except Exception:
-            continue
+            except Exception:
+                continue
 
     if not subscribed:
         # Save the user’s message temporarily
@@ -3314,3 +3314,4 @@ async def recheck_subscription(client, query):
             await manual_filters(client, fake_message)
     else:
         await query.answer("❌ You haven’t joined all channels yet!", show_alert=True)
+
