@@ -39,24 +39,96 @@ BUTTONS1 = {}
 BUTTONS2 = {}
 SPELL_CHECK = {}
 
+
+
+# ====================================================================================
+# Force Subscription Helper Functions
+# ====================================================================================
+
+async def check_all_channels_member(client, user_id):
+    """
+    Checks if a user is a member of ALL channels in FORCE_SUB_CHANNELS.
+    
+    Returns:
+        tuple (is_subscribed: bool, missing_channels: list)
+    """
+    if not FORCE_SUB_CHANNELS:
+        return True, [] 
+
+    missing_channels = []
+    
+    for channel in FORCE_SUB_CHANNELS:
+        try:
+            member = await client.get_chat_member(channel, user_id)
+            # Check for active membership status
+            if member.status in (enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.CREATOR):
+                continue
+            else:
+                missing_channels.append(channel) 
+        except UserNotParticipant:
+            missing_channels.append(channel)
+        except Exception as e:
+            logger.error(f"Error checking membership for channel {channel}: {e}")
+            missing_channels.append(channel) 
+
+    return (False, missing_channels) if missing_channels else (True, [])
+
+async def get_force_sub_buttons(client, missing_channels):
+    """Builds InlineKeyboardMarkup for force subscription with a recheck button."""
+    if not missing_channels:
+        return None
+        
+    buttons = []
+    for channel in missing_channels:
+        try:
+            chat = await client.get_chat(channel)
+            invite_link = chat.invite_link if chat.invite_link else f"https://t.me/{chat.username or channel}"
+            # Use channel title if available
+            title = chat.title or "Channel"
+            buttons.append([InlineKeyboardButton(f"📢 Join Channel: {title}", url=invite_link)])
+        except Exception:
+            # Fallback if chat info fails
+            buttons.append([InlineKeyboardButton(f"📢 Join Channel", url=f"https://t.me/{channel}")])
+            
+    # Add the re-check button
+    buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="recheck_fsub")])
+    return InlineKeyboardMarkup(buttons)
+
+
+
+
 @Client.on_message(filters.group & filters.text & filters.incoming)
 async def give_filter(client, message):
-    if message.chat.id != SUPPORT_CHAT_ID:
-        settings = await get_settings(message.chat.id)
-        chatid = message.chat.id 
+    if message.chat.id != SUPPORT_CHAT_ID: 
         user_id = message.from_user.id if message.from_user else 0
-        if settings.get('fsub') is not None:
-            try:
-                btn = await pub_is_subscribed(client, message, settings['fsub'])
-                if btn:
-                    btn.append([InlineKeyboardButton("Unmute Me 🔕", callback_data=f"unmuteme#{int(user_id)}")])
-                    await client.restrict_chat_member(chatid, message.from_user.id, ChatPermissions(can_send_messages=False))
-                    await message.reply_photo(photo=random.choice(PICS), caption=f"👋 Hello {message.from_user.mention},\n\nPlease join the channel then click on unmute me button. 😇", reply_markup=InlineKeyboardMarkup(btn), parse_mode=enums.ParseMode.HTML)
-                    return
-            except Exception as e:
-                print(e)
+        chatid = message.chat.id
+
+        # --- FORCE SUB LOGIC APPLIES TO ALL USERS, INCLUDING ADMINS ---
+        
+        is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
+        
+        if not is_subscribed:
+            # 1. Store original message details in cache
+            temp_cache[user_id] = {
+                "chat_id": chatid,
+                "text": message.text,
+                "original_message_id": message.id 
+            }
             
+            # 2. Send force sub message with buttons
+            reply_markup = await get_force_sub_buttons(client, missing_channels)
+            
+            await message.reply_photo(
+                photo=random.choice(PICS), 
+                caption=f"👋 Hello {message.from_user.mention},\n\n**You must join ALL required channels to use the filter bot.**\n\nPlease join the channels below and then click on '✅ I Joined'. 😇", 
+                reply_markup=reply_markup, 
+                parse_mode=enums.ParseMode.HTML
+            )
+            return # Stop processing the message/filter
+        
+        # --- Continue to your original filter logic if subscribed ---
         manual = await manual_filters(client, message)
+        
         if manual == False:
             settings = await get_settings(message.chat.id)
             try:
@@ -73,13 +145,16 @@ async def give_filter(client, message):
                     ai_search = True
                     reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
                     await auto_filter(client, message.text, message, reply_msg, ai_search)
-    else: #a better logic to avoid repeated lines of code in auto_filter function
+    else: 
         search = message.text
         temp_files, temp_offset, total_results = await get_search_results(chat_id=message.chat.id, query=search.lower(), offset=0, filter=True)
         if total_results == 0:
             return
         else:
-            return await message.reply_text(f"<b>Hᴇʏ {message.from_user.mention}, {str(total_results)} ʀᴇsᴜʟᴛs ᴀʀᴇ ғᴏᴜɴᴅ ɪɴ ᴍʏ ᴅᴀᴛᴀʙᴀsᴇ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}. \n\nTʜɪs ɪs ᴀ sᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ sᴏ ᴛʜᴀᴛ ʏᴏᴜ ᴄᴀɴ'ᴛ ɢᴇᴛ ғɪʟᴇs ғʀᴏᴍ ʜᴇʀᴇ...\n\nJᴏɪɴ ᴀɴᴅ Sᴇᴀʀᴄʜ Hᴇʀᴇ - {GRP_LNK}</b>")
+            return await message.reply_text(f"<b>Hᴇʏ {message.from_user.mention}, {str(total_results)} ʀᴇsᴜʟᴛs ᴀʀᴇ ғᴏᴜɴᴅ ɪɴ ᴍʏ ᴅᴀᴛᴀʙasᴇ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}. \n\nTʜɪs ɪs ᴀ sᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ sᴏ ᴛʜᴀᴛ ʏᴏᴜ ᴄᴀɴ'T ɢᴇᴛ ғɪʟᴇs ғʀᴏᴍ ʜᴇʀᴇ...\n\nJᴏɪɴ ᴀɴᴅ Sᴇᴀʀᴄʜ Hᴇʀᴇ - {GRP_LNK}</b>")
+
+
+
 
 @Client.on_message(filters.private & filters.text & filters.incoming)
 async def pm_text(bot, message):
@@ -3278,39 +3353,58 @@ async def global_filters(client, message, text=False):
 
 
 
-@Client.on_callback_query(filters.regex("check_subs"))
-async def recheck_subscription(client, query):
+@Client.on_callback_query(filters.regex(r"^recheck_fsub"))
+async def recheck_force_subscribe(client, query):
     user_id = query.from_user.id
-
-    subscribed = True
-    for ch in FORCE_SUB_CHANNELS:
+    
+    is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
+    
+    if not is_subscribed:
+        # User is still missing channels
+        reply_markup = await get_force_sub_buttons(client, missing_channels)
+        
+        await query.answer("❌ You haven't joined ALL required channels yet. Please join and try again.", show_alert=True)
         try:
-            member = await client.get_chat_member(ch, user_id)
-            if member.status not in ("member", "administrator", "creator"):
-                subscribed = False
-                break
-        except UserNotParticipant:
-            subscribed = False
-            break
-        except Exception:
-            continue
+            await query.message.edit_reply_markup(reply_markup=reply_markup)
+        except MessageNotModified:
+            pass
+        return
+        
+    # --- SUBSCRIPTION SUCCESSFUL ---
 
-    if subscribed:
-        await query.message.edit_text("✅ You’ve joined! Fetching your result...")
+    # 1. Inform the user and retrieve stored data
+    await query.message.edit_caption("✅ **Subscription confirmed!** Fetching your request now...")
+    await query.answer("Subscription verified!")
+    
+    # 2. Re-run the filter search using cached data
+    if user_id in temp_cache:
+        data = temp_cache.pop(user_id)
+        chat_id = data["chat_id"]
+        text = data["text"]
+        
+        # Create a mock message object to mimic the original incoming message
+        mock_message = type("MockMessage", (object,), {
+            "chat": type("Chat", (object,), {"id": chat_id})(),
+            "text": text,
+            "from_user": query.from_user,
+            "reply_to_message": None, 
+            "id": data["original_message_id"] 
+        })
+        
+        # Run the manual filter check
+        manual = await manual_filters(client, mock_message)
+        
+        if manual == False:
+            # Run auto filter if no manual filter was found
+            settings = await get_settings(chat_id)
+            if settings.get('auto_ffilter'):
+                ai_search = True
+                # Edit the message one last time for search results
+                reply_msg = await query.message.edit_caption(f"<b><i>Searching For {text} 🔍</i></b>", parse_mode=enums.ParseMode.HTML)
+                
+                # Assuming auto_filter is correctly defined
+                await auto_filter(client, text, mock_message, reply_msg, ai_search) 
 
-        if user_id in temp_cache:
-            data = temp_cache.pop(user_id)
-            chat_id = data["chat_id"]
-            text = data["text"]
-
-            # Proper fake message for manual_filters
-            fake_message = type("FakeMessage", (), {
-                "chat": type("Chat", (), {"id": chat_id})(),
-                "text": text,
-                "from_user": query.from_user,
-                "reply_to_message": None,
-                "id": query.message.id
-            })
-            await manual_filters(client, fake_message)
     else:
-        await query.answer("❌ You haven’t joined all channels yet!", show_alert=True)
+        # If data is not in cache, prompt the user to re-type
+        await query.message.edit_caption("✅ **Subscription confirmed!** Your original request could not be retrieved, please re-type it.")
