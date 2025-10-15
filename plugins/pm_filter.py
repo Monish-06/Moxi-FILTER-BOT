@@ -48,7 +48,7 @@ SPELL_CHECK = {}
 async def check_all_channels_member(client, user_id):
     """
     Checks if a user is a member of ALL channels in FORCE_SUB_CHANNELS.
-    Uses robust exception handling for Creator/Admin Pyrogram quirks.
+    Uses robust exception handling for Pyrogram quirks.
     """
     if not FORCE_SUB_CHANNELS:
         return True, [] 
@@ -59,7 +59,7 @@ async def check_all_channels_member(client, user_id):
         try:
             member = await client.get_chat_member(channel, user_id)
             
-            # The check succeeds. Only these statuses count as "subscribed."
+            # This is the SUCCESS block. The user is a member/admin/creator.
             if member.status in (enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.CREATOR):
                 continue
             else:
@@ -73,19 +73,17 @@ async def check_all_channels_member(client, user_id):
         except Exception as e:
             error_message = str(e)
             
-            # --- ROBUST WORKAROUND FOR CREATOR/ADMIN API BUG ---
-            # If the error contains CREATOR/ADMINISTRATOR, it's an API bug, not a user status failure.
-            # We log the error but still treat it as a required channel to ensure security.
+            # --- CRITICAL WORKAROUND: Log the failure, but still force the join prompt. ---
+            # This handles the silent API quirk where the check fails for the user ID 
+            # but the log error is suppressed by the hosting environment.
             if "CREATOR" in error_message or "ADMINISTRATOR" in error_message: 
-                logger.warning(f"Force-sub check failed due to Telegram API quirk in {channel}. Logging error and prompting user to join.")
-                missing_channels.append(channel) # Force the user to the join screen
+                logger.warning(f"FSUB Check failed (API quirk) in {channel}. Prompting user to join.")
             else:
-                # For any other critical failure (e.g., channel not found), stop and log.
-                logger.error(f"Critical error during membership check for channel {channel}: {error_message}")
-                missing_channels.append(channel) 
+                logger.error(f"Critical error during FSUB check for channel {channel}: {error_message}")
+                
+            missing_channels.append(channel) 
 
     return (False, missing_channels) if missing_channels else (True, [])
-
 async def get_force_sub_buttons(client, missing_channels):
     """Builds InlineKeyboardMarkup for force subscription with the recheck button."""
     if not missing_channels:
@@ -3409,6 +3407,7 @@ async def recheck_force_subscribe(client, query):
     else:
         # If data is not in cache, prompt the user to re-type
         await query.message.edit_caption("✅ **Subscription confirmed!** Your original request could not be retrieved, please re-type it.")
+
 
 
 
