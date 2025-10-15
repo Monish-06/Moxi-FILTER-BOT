@@ -2884,6 +2884,7 @@ from rapidfuzz import process, fuzz  # Make sure this is imported
 
 async def manual_filters(client, message, text=False):
     # OnOnlyun force-sub check if channels are set
+    # Only run force-sub if FORCE_SUB_CHANNELS is set
     if FORCE_SUB_CHANNELS and message.from_user:
         user_id = message.from_user.id
         chat_id = message.chat.id
@@ -3281,7 +3282,6 @@ async def global_filters(client, message, text=False):
 async def recheck_subscription(client, query):
     user_id = query.from_user.id
 
-    # Recheck all channels
     subscribed = True
     for ch in FORCE_SUB_CHANNELS:
         try:
@@ -3303,7 +3303,7 @@ async def recheck_subscription(client, query):
             chat_id = data["chat_id"]
             text = data["text"]
 
-            # Call manual_filters again with the saved message
+            # Proper fake message for manual_filters
             fake_message = type("FakeMessage", (), {
                 "chat": type("Chat", (), {"id": chat_id})(),
                 "text": text,
@@ -3314,4 +3314,3 @@ async def recheck_subscription(client, query):
             await manual_filters(client, fake_message)
     else:
         await query.answer("❌ You haven’t joined all channels yet!", show_alert=True)
-
