@@ -46,8 +46,10 @@ SPELL_CHECK = {}
 # ====================================================================================
 
 async def check_all_channels_member(client, user_id):
-    """Checks if a user is a member of ALL channels in FORCE_SUB_CHANNELS."""
-    # If no channels are set in the environment, always return True
+    """
+    Checks if a user is a member of ALL channels in FORCE_SUB_CHANNELS.
+    Uses robust exception handling for Creator/Admin Pyrogram quirks.
+    """
     if not FORCE_SUB_CHANNELS:
         return True, [] 
 
@@ -56,17 +58,31 @@ async def check_all_channels_member(client, user_id):
     for channel in FORCE_SUB_CHANNELS:
         try:
             member = await client.get_chat_member(channel, user_id)
-            # Checks for member, administrator, or creator status
+            
+            # The check succeeds. Only these statuses count as "subscribed."
             if member.status in (enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.CREATOR):
                 continue
             else:
+                # Status is Left, Kicked, or restricted.
                 missing_channels.append(channel) 
+                
         except UserNotParticipant:
+            # This is the definitive signal the user has not joined.
             missing_channels.append(channel)
+            
         except Exception as e:
-            logger.error(f"Error checking membership for channel {channel}: {e}")
-            # If API fails, assume user needs to join
-            missing_channels.append(channel) 
+            error_message = str(e)
+            
+            # --- ROBUST WORKAROUND FOR CREATOR/ADMIN API BUG ---
+            # If the error contains CREATOR/ADMINISTRATOR, it's an API bug, not a user status failure.
+            # We log the error but still treat it as a required channel to ensure security.
+            if "CREATOR" in error_message or "ADMINISTRATOR" in error_message: 
+                logger.warning(f"Force-sub check failed due to Telegram API quirk in {channel}. Logging error and prompting user to join.")
+                missing_channels.append(channel) # Force the user to the join screen
+            else:
+                # For any other critical failure (e.g., channel not found), stop and log.
+                logger.error(f"Critical error during membership check for channel {channel}: {error_message}")
+                missing_channels.append(channel) 
 
     return (False, missing_channels) if missing_channels else (True, [])
 
@@ -3393,5 +3409,6 @@ async def recheck_force_subscribe(client, query):
     else:
         # If data is not in cache, prompt the user to re-type
         await query.message.edit_caption("✅ **Subscription confirmed!** Your original request could not be retrieved, please re-type it.")
+
 
 
