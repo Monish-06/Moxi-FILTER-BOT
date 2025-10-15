@@ -105,9 +105,12 @@ async def give_filter(client, message):
 
         # --- FORCE SUB LOGIC APPLIES TO ALL USERS, INCLUDING ADMINS ---
         
+        # This function correctly checks all channels based on FORCE_SUB_CHANNELS
         is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
         
         if not is_subscribed:
+            # User must subscribe first.
+            
             # 1. Store original message details in cache
             temp_cache[user_id] = {
                 "chat_id": chatid,
@@ -116,6 +119,7 @@ async def give_filter(client, message):
             }
             
             # 2. Send force sub message with buttons
+            # This helper function creates the correct "recheck_fsub" button
             reply_markup = await get_force_sub_buttons(client, missing_channels)
             
             await message.reply_photo(
@@ -146,13 +150,13 @@ async def give_filter(client, message):
                     reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
                     await auto_filter(client, message.text, message, reply_msg, ai_search)
     else: 
+        # (Your existing SUPPORT_CHAT_ID logic)
         search = message.text
         temp_files, temp_offset, total_results = await get_search_results(chat_id=message.chat.id, query=search.lower(), offset=0, filter=True)
         if total_results == 0:
             return
         else:
-            return await message.reply_text(f"<b>Hᴇʏ {message.from_user.mention}, {str(total_results)} ʀᴇsᴜʟᴛs ᴀʀᴇ ғᴏᴜɴᴅ ɪɴ ᴍʏ ᴅᴀᴛᴀʙasᴇ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}. \n\nTʜɪs ɪs ᴀ sᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ sᴏ ᴛʜᴀᴛ ʏᴏᴜ ᴄᴀɴ'T ɢᴇᴛ ғɪʟᴇs ғʀᴏᴍ ʜᴇʀᴇ...\n\nJᴏɪɴ ᴀɴᴅ Sᴇᴀʀᴄʜ Hᴇʀᴇ - {GRP_LNK}</b>")
-
+            return await message.reply_text(f"<b>Hᴇʏ {message.from_user.mention}, {str(total_results)} ʀᴇsᴜʟᴛs ᴀʀᴇ ғᴏᴜɴᴅ ɪɴ ᴍʏ ᴅᴀᴛᴀʙᴀsᴇ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}. \n\nTʜɪs ɪs ᴀ sᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ sᴏ ᴛʜᴀᴛ ʏᴏᴜ ᴄᴀɴ'T ɢᴇᴛ ғɪʟᴇs ғʀᴏᴍ ʜᴇʀᴇ...\n\nJᴏɪɴ ᴀɴᴅ Sᴇᴀʀᴄʜ Hᴇʀᴇ - {GRP_LNK}</b>")
 
 
 
@@ -3356,11 +3360,13 @@ async def global_filters(client, message, text=False):
 @Client.on_callback_query(filters.regex(r"^recheck_fsub"))
 async def recheck_force_subscribe(client, query):
     user_id = query.from_user.id
+    chat_id = query.message.chat.id
     
+    # 1. Re-check subscription status (using the new multi-channel helper)
     is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
     
     if not is_subscribed:
-        # User is still missing channels
+        # Still missing channels
         reply_markup = await get_force_sub_buttons(client, missing_channels)
         
         await query.answer("❌ You haven't joined ALL required channels yet. Please join and try again.", show_alert=True)
@@ -3372,14 +3378,12 @@ async def recheck_force_subscribe(client, query):
         
     # --- SUBSCRIPTION SUCCESSFUL ---
 
-    # 1. Inform the user and retrieve stored data
     await query.message.edit_caption("✅ **Subscription confirmed!** Fetching your request now...")
     await query.answer("Subscription verified!")
     
     # 2. Re-run the filter search using cached data
     if user_id in temp_cache:
         data = temp_cache.pop(user_id)
-        chat_id = data["chat_id"]
         text = data["text"]
         
         # Create a mock message object to mimic the original incoming message
@@ -3402,9 +3406,9 @@ async def recheck_force_subscribe(client, query):
                 # Edit the message one last time for search results
                 reply_msg = await query.message.edit_caption(f"<b><i>Searching For {text} 🔍</i></b>", parse_mode=enums.ParseMode.HTML)
                 
-                # Assuming auto_filter is correctly defined
                 await auto_filter(client, text, mock_message, reply_msg, ai_search) 
 
     else:
         # If data is not in cache, prompt the user to re-type
         await query.message.edit_caption("✅ **Subscription confirmed!** Your original request could not be retrieved, please re-type it.")
+
