@@ -3353,20 +3353,21 @@ async def global_filters(client, message, text=False):
 # ====================================================================================
 # recheck_force_subscribe FUNCTION (REPLACE ENTIRELY)
 # ====================================================================================
+
 @Client.on_callback_query(filters.regex(r"^recheck_fsub"))
 async def recheck_force_subscribe(client, query):
     user_id = query.from_user.id
     
-    # 1. Re-check subscription status using the robust function
+    # 1. Re-check subscription status
     is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
     
     if not is_subscribed:
-        # If still missing channels, update the button text/alert the user
+        # User is still missing channels
         reply_markup = await get_force_sub_buttons(client, missing_channels)
         
         await query.answer("❌ You haven't joined ALL required channels yet. Please join and try again.", show_alert=True)
         try:
-            # Try to edit the message markup just in case the link changed
+            # Update the button text as a fallback to show it's still missing
             await query.message.edit_reply_markup(reply_markup=reply_markup)
         except MessageNotModified:
             pass
@@ -3374,38 +3375,42 @@ async def recheck_force_subscribe(client, query):
         
     # --- SUBSCRIPTION SUCCESSFUL ---
 
-    # 2. Alert the user first, then delete the message
+    # 2. Alert the user and delete the message
     await query.answer("✅ Subscription verified!")
     
-    # CRITICAL: Delete the subscription prompt message (the one with the buttons)
+    # CRITICAL: Delete the subscription prompt message
     try:
         await query.message.delete()
     except Exception as e:
-        # If message deletion fails (e.g., bot permissions are missing, or it's too old)
-        logger.error(f"Failed to delete force-sub prompt message: {e}")
+        # If deletion fails (e.g., missing admin rights), edit to a success message
         try:
-            # Attempt to edit it to a success message as a fallback
             await query.message.edit_caption("✅ **Subscription verified!** You may now re-send your request.")
         except Exception:
              pass
 
-    # 3. Inform the user to re-send their request (The reliable part)
+    # 3. Inform the user to re-send their request (RELIABLE)
     if user_id in temp_cache:
         data = temp_cache.pop(user_id)
         original_text = data["text"]
         
-        # Send a message telling them they are good to go and what to re-send
+        # Send a message telling them they are good to go
         await client.send_message(
-            data["chat_id"], # Use the original chat ID from cache
+            data["chat_id"],
             f"✅ **Subscription confirmed!** You may now re-send your request: **`{original_text}`**",
-            reply_to_message_id=data["original_message_id"] # Reply to their original message
+            reply_to_message_id=data["original_message_id"] 
         )
     else:
-        # Fallback if cache expired
         await client.send_message(
             query.message.chat.id,
             "✅ **Subscription confirmed!** You may now send any message/filter request."
         )
+
+
+
+
+
+
+
 
 
 
