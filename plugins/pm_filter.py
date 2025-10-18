@@ -3356,58 +3356,49 @@ async def global_filters(client, message, text=False):
 @Client.on_callback_query(filters.regex(r"^recheck_fsub"))
 async def recheck_force_subscribe(client, query):
     user_id = query.from_user.id
-    chat_id = query.message.chat.id
     
     # 1. Re-check subscription status
     is_subscribed, missing_channels = await check_all_channels_member(client, user_id)
     
     if not is_subscribed:
-        # Still missing channels
+        # User is still missing channels
         reply_markup = await get_force_sub_buttons(client, missing_channels)
         
         await query.answer("❌ You haven't joined ALL required channels yet. Please join and try again.", show_alert=True)
         try:
-            await query.message.edit_reply_markup(reply_markup=reply_markup)
+            # Updates the button if the channel link was expired/wrong
+            await query.message.edit_reply_markup(reply_markup=reply_markup) 
         except MessageNotModified:
             pass
         return
         
     # --- SUBSCRIPTION SUCCESSFUL ---
 
-    await query.message.edit_caption("✅ **Subscription confirmed!** Fetching your request now...")
     await query.answer("Subscription verified!")
     
-    # 2. Re-run the filter search using cached data
+    # 2. Delete the subscription prompt message
+    try:
+        await query.message.delete()
+    except Exception:
+        pass
+        
+    # 3. Inform the user to re-send their request (RELIABLE FIX)
     if user_id in temp_cache:
-        # CRITICAL: Retrieve and REMOVE the stored text
         data = temp_cache.pop(user_id)
-        text = data["text"]
+        original_text = data["text"]
         
-        # Create a mock message object
-        mock_message = type("MockMessage", (object,), {
-            "chat": type("Chat", (object,), {"id": chat_id})(),
-            "text": text,
-            "from_user": query.from_user,
-            "reply_to_message": None, 
-            "id": data["original_message_id"] 
-        })
-        
-        # Run filter logic
-        manual = await manual_filters(client, mock_message)
-        
-        if manual == False:
-            # Run auto filter if no manual filter was found
-            settings = await get_settings(chat_id)
-            if settings.get('auto_ffilter'):
-                ai_search = True
-                reply_msg = await query.message.edit_caption(f"<b><i>Searching For {text} 🔍</i></b>", parse_mode=enums.ParseMode.HTML)
-                
-                await auto_filter(client, text, mock_message, reply_msg, ai_search) 
-
+        # Send a brief message telling them they are good to go
+        await client.send_message(
+            query.message.chat.id,
+            f"✅ **Subscription confirmed!** You may now re-send your request: **`{original_text}`**",
+            # Replies to their original message for better context
+            reply_to_message_id=data["original_message_id"] 
+        )
     else:
-        # If data is not in cache, prompt the user to re-type
-        await query.message.edit_caption("✅ **Subscription confirmed!** Your original request could not be retrieved, please re-type it.")
-
+        await client.send_message(
+            query.message.chat.id,
+            "✅ **Subscription confirmed!** You may now send any message/filter request."
+        )
 
 
 
