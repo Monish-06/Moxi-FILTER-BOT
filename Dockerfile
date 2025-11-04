@@ -1,16 +1,19 @@
-# Don't Remove Credit @VJ_Botz
-# Subscribe YouTube Channel For Amazing Bot @Tech_VJ
-# Ask Doubt on telegram @KingVJ01
+# Base image (updated Debian version)
+FROM python:3.10-slim-bullseye
 
-FROM python:3.10.8-slim-buster
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt update && apt upgrade -y
-RUN apt install git -y
+# Update and install git
+RUN apt-get update && apt-get install -y git && apt-get clean
+
+# Copy and install dependencies
 COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir -r /requirements.txt
 
-RUN cd /
-RUN pip3 install -U pip && pip3 install -U -r requirements.txt
-RUN mkdir /VJ-FILTER-BOT
+# Copy project files
 WORKDIR /VJ-FILTER-BOT
-COPY . /VJ-FILTER-BOT
+COPY . .
+
+# Run the bot
 CMD ["python", "bot.py"]
